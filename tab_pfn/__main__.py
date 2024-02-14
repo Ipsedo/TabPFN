@@ -12,6 +12,8 @@ def main() -> None:
     parser.add_argument("--max-class", type=int, default=16)
     parser.add_argument("--model-dim", type=int, default=256)
     parser.add_argument("--hidden-dim", type=int, default=512)
+    parser.add_argument("--nheads", type=int, default=8)
+    parser.add_argument("--num-layers", type=int, default=6)
     parser.add_argument("--cuda", action="store_true")
 
     sub_parser = parser.add_subparsers(dest="mode")
@@ -32,6 +34,8 @@ def main() -> None:
         args.max_class,
         args.model_dim,
         args.hidden_dim,
+        args.nheads,
+        args.num_layers,
         args.cuda,
     )
 

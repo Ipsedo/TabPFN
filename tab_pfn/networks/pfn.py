@@ -7,14 +7,25 @@ from .encoder import DataAndLabelEncoder, DataEncoder
 
 
 class PPD(nn.Module):
-    def __init__(self, model_dim: int, hidden_dim: int, nb_class: int) -> None:
+    def __init__(
+        self,
+        model_dim: int,
+        hidden_dim: int,
+        nheads: int,
+        num_layers: int,
+        nb_class: int,
+    ) -> None:
         super().__init__()
 
         self.__trf = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
-                model_dim, 4, hidden_dim, activation=F.gelu, batch_first=True
+                model_dim,
+                nheads,
+                hidden_dim,
+                activation=F.gelu,
+                batch_first=True,
             ),
-            6,
+            num_layers,
         )
 
         self.__to_class = nn.Linear(model_dim, nb_class)
@@ -51,6 +62,8 @@ class TabPFN(nn.Module):
         max_nb_class: int,
         model_dim: int,
         hidden_dim: int,
+        nheads: int,
+        num_layers: int,
     ) -> None:
         super().__init__()
 
@@ -68,7 +81,9 @@ class TabPFN(nn.Module):
             model_dim,
         )
 
-        self.__trf = PPD(model_dim, hidden_dim, max_nb_class)
+        self.__trf = PPD(
+            model_dim, hidden_dim, nheads, num_layers, max_nb_class
+        )
 
     def forward(
         self, x_train: th.Tensor, y_train: th.Tensor, x_test: th.Tensor

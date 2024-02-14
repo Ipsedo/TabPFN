@@ -78,6 +78,8 @@ def test_data_encoder(
 @pytest.mark.parametrize("nb_test", [8, 16])
 @pytest.mark.parametrize("model_dim", [8, 16])
 @pytest.mark.parametrize("hidden_dim", [16, 32])
+@pytest.mark.parametrize("nheads", [1, 2])
+@pytest.mark.parametrize("num_layers", [1, 2])
 @pytest.mark.parametrize("nb_class", [2, 3])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_ppd(
@@ -85,10 +87,12 @@ def test_ppd(
     nb_test: int,
     model_dim: int,
     hidden_dim: int,
+    nheads: int,
+    num_layers: int,
     nb_class: int,
     device: str,
 ) -> None:
-    pfn = PPD(model_dim, hidden_dim, nb_class)
+    pfn = PPD(model_dim, hidden_dim, nheads, num_layers, nb_class)
     pfn.to(device)
 
     x_train = th.randn(nb_train, model_dim, device=device)
@@ -106,6 +110,8 @@ def test_ppd(
 @pytest.mark.parametrize("max_features", [4, 8])
 @pytest.mark.parametrize("model_dim", [8, 16])
 @pytest.mark.parametrize("hidden_dim", [16, 32])
+@pytest.mark.parametrize("nheads", [1, 2])
+@pytest.mark.parametrize("num_layers", [1, 2])
 @pytest.mark.parametrize("nb_class", [2, 3])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_tab_pfn(
@@ -114,10 +120,14 @@ def test_tab_pfn(
     max_features: int,
     model_dim: int,
     hidden_dim: int,
+    nheads: int,
+    num_layers: int,
     nb_class: int,
     device: str,
 ) -> None:
-    tab_pfn = TabPFN(max_features, nb_class, model_dim, hidden_dim)
+    tab_pfn = TabPFN(
+        max_features, nb_class, model_dim, hidden_dim, nheads, num_layers
+    )
     tab_pfn.to(device)
 
     x_train = th.randn(nb_train, max_features, device=device)

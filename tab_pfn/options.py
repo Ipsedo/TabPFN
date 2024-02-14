@@ -9,6 +9,8 @@ class ModelOptions(NamedTuple):
     max_class: int
     model_dim: int
     hidden_dim: int
+    nheads: int
+    num_layers: int
     cuda: bool
 
     def get_tab_pfn(self) -> TabPFN:
@@ -17,6 +19,8 @@ class ModelOptions(NamedTuple):
             self.max_class,
             self.model_dim,
             self.hidden_dim,
+            self.nheads,
+            self.num_layers,
         )
 
     def get_scm(self) -> SCM:
