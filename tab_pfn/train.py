@@ -88,7 +88,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     f"(n_class={scm.nb_class}) : "
                     f"loss = {loss_meter.loss():.4f}, "
                     f"precision = {precision:.4f}, "
-                    f"recall = {recall:.4f}"
+                    f"recall = {recall:.4f}, "
+                    f"grad_norm = {tab_pfn.grad_norm():.4f}"
                 )
 
                 mlflow.log_metrics(
