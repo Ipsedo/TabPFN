@@ -1,6 +1,7 @@
 torch
 numpy
 tqdm
+mlflow
 
 pre-commit
 mypy

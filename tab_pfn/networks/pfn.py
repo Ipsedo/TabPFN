@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from statistics import mean
+
+import numpy as np
 import torch as th
 from torch import nn
 from torch.nn import functional as F
@@ -96,3 +99,13 @@ class TabPFN(nn.Module):
         out: th.Tensor = self.__trf(train_enc, test_enc)
 
         return out
+
+    def count_parameters(self) -> int:
+        return sum(int(np.prod(p.size())) for p in self.parameters())
+
+    def grad_norm(self) -> float:
+        return mean(
+            float(p.grad.norm().item())
+            for p in self.parameters()
+            if p.grad is not None
+        )
