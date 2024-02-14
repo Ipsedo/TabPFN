@@ -4,7 +4,7 @@ from typing import Callable, List, Tuple
 
 import torch as th
 from torch import nn
-from torch.distributions import MultivariateNormal, Wishart
+from torch.distributions import MultivariateNormal
 from torch.nn import functional as F
 
 
@@ -48,14 +48,10 @@ class SCM(nn.Module):
 
         self.__x_idx = non_masked_nodes[:n_features].split(1, dim=1)
 
-        # cov_mat = th.randn(hidden_size, hidden_size)
-        # diag = th.exp(th.abs(th.randn(hidden_size)))
-        # cov_mat = th.mm(th.diag(diag), cov_mat)
-        # cov_mat = cov_mat @ cov_mat.t()
-        cov_mat = Wishart(
-            th.tensor(randint(hidden_size, hidden_size * 2)),
-            th.eye(hidden_size),
-        ).sample()
+        cov_mat = th.rand(hidden_size, hidden_size)
+        cov_mat = 0.5 * (cov_mat + cov_mat.t())
+        cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
+        cov_mat = cov_mat @ cov_mat.t()
 
         loc = th.randn(hidden_size)
 
@@ -64,7 +60,7 @@ class SCM(nn.Module):
 
         self.__y_idx = non_masked_nodes[n_features + 1]
 
-        self.__nb_class = randint(class_bounds[0], class_bounds[1])
+        self.__nb_class = randint(class_bounds[0], class_bounds[1] - 1)
 
         self.__y_class_intervals: List[float] = []
 

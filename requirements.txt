@@ -1,5 +1,6 @@
 torch
 numpy
+tqdm
 
 pre-commit
 mypy
