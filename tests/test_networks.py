@@ -2,8 +2,9 @@
 from typing import Tuple
 
 import pytest
+import torch as th
 
-from tab_pfn.networks import SCM
+from tab_pfn.networks import SCM, DataEncoder
 
 
 @pytest.mark.parametrize("batch_size", [2, 3])
@@ -31,3 +32,32 @@ def test_scm(
 
     assert len(y.size()) == 1
     assert y.size(0) == batch_size
+
+
+@pytest.mark.parametrize("batch_size", [2, 3])
+@pytest.mark.parametrize("x_dim", [64, 128])
+@pytest.mark.parametrize("nb_class", [3, 4])
+@pytest.mark.parametrize("y_emb_dim", [64, 128])
+@pytest.mark.parametrize("hidden_dim", [64, 128])
+@pytest.mark.parametrize("output_dim", [64, 128])
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_data_encoder(
+    batch_size: int,
+    x_dim: int,
+    nb_class: int,
+    y_emb_dim: int,
+    hidden_dim: int,
+    output_dim: int,
+    device: str,
+) -> None:
+    encoder = DataEncoder(x_dim, nb_class, y_emb_dim, hidden_dim, output_dim)
+    encoder.to(device)
+
+    x = th.randn(batch_size, x_dim, device=device)
+    y = th.randint(0, nb_class, (batch_size,), device=device)
+
+    o = encoder(x, y)
+
+    assert len(o.size()) == 2
+    assert o.size(0) == batch_size
+    assert o.size(1) == output_dim
