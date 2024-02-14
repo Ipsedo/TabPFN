@@ -20,8 +20,11 @@ def test_scm(
 ) -> None:
     scm = SCM(drop_proba, n_features, layers_bound, node_bound)
 
-    out = scm(batch_size)
+    x, y = scm(batch_size)
 
-    assert len(out.size()) == 2
-    assert out.size(0) == batch_size
-    assert out.size(1) == n_features
+    assert len(x.size()) == 2
+    assert x.size(0) == batch_size
+    assert x.size(1) == n_features
+
+    assert len(y.size()) == 1
+    assert y.size(0) == batch_size
