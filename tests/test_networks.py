@@ -4,7 +4,7 @@ from typing import Tuple
 import pytest
 import torch as th
 
-from tab_pfn.networks import SCM, DataAndLabelEncoder, DataEncoder
+from tab_pfn.networks import PFN, SCM, DataAndLabelEncoder, DataEncoder
 
 
 @pytest.mark.parametrize("batch_size", [2, 3])
@@ -72,3 +72,30 @@ def test_data_encoder(
     assert len(o.size()) == 2
     assert o.size(0) == batch_size
     assert o.size(1) == output_dim
+
+
+@pytest.mark.parametrize("nb_train", [8, 16])
+@pytest.mark.parametrize("nb_test", [8, 16])
+@pytest.mark.parametrize("model_dim", [8, 16])
+@pytest.mark.parametrize("hidden_dim", [16, 32])
+@pytest.mark.parametrize("nb_class", [2, 3])
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_pfn(
+    nb_train: int,
+    nb_test: int,
+    model_dim: int,
+    hidden_dim: int,
+    nb_class: int,
+    device: str,
+) -> None:
+    pfn = PFN(model_dim, hidden_dim, nb_class)
+    pfn.to(device)
+
+    x_train = th.randn(nb_train, model_dim, device=device)
+    x_test = th.randn(nb_test, model_dim, device=device)
+
+    out = pfn(x_train, x_test)
+
+    assert len(out.size()) == 2
+    assert out.size(0) == nb_test
+    assert out.size(1) == nb_class

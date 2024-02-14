@@ -15,7 +15,7 @@ class SCM(nn.Module):
         n_features: int,
         layer_bounds: Tuple[int, int] = (4, 8),
         node_bounds: Tuple[int, int] = (64, 128),
-        class_bounds: Tuple[int, int] = (2, 32),
+        class_bounds: Tuple[int, int] = (2, 16),
     ) -> None:
         super().__init__()
 
