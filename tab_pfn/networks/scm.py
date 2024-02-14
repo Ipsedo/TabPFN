@@ -4,7 +4,7 @@ from typing import Callable, List, Tuple
 
 import torch as th
 from torch import nn
-from torch.distributions import MultivariateNormal
+from torch.distributions import MultivariateNormal, Wishart
 from torch.nn import functional as F
 
 
@@ -48,8 +48,14 @@ class SCM(nn.Module):
 
         self.__x_idx = non_masked_nodes[:n_features].split(1, dim=1)
 
-        cov_mat = th.randn(hidden_size, hidden_size)
-        cov_mat = th.matmul(cov_mat.transpose(0, 1), cov_mat)
+        # cov_mat = th.randn(hidden_size, hidden_size)
+        # diag = th.exp(th.abs(th.randn(hidden_size)))
+        # cov_mat = th.mm(th.diag(diag), cov_mat)
+        # cov_mat = cov_mat @ cov_mat.t()
+        cov_mat = Wishart(
+            th.tensor(randint(hidden_size, hidden_size * 2)),
+            th.eye(hidden_size),
+        ).sample()
 
         loc = th.randn(hidden_size)
 

@@ -19,22 +19,25 @@ repos:
     rev: 22.10.0
     hooks:
       - id: black
+        args: [ --config=pyproject.toml ]
   - repo: https://github.com/hadialqattan/pycln
     rev: v2.1.2
     hooks:
       - id: pycln
+        args: [ --config=pyproject.toml ]
   - repo: https://github.com/pycqa/isort
     rev: 5.12.0
     hooks:
       - id: isort
         files: "\\.(py)$"
+        args: [ --settings-path=pyproject.toml ]
   - repo: local
     hooks:
       - id: mypy
         name: mypy
         language: system
         entry: mypy
-        args: [ tab_pfn, tests]
+        args: [ tab_pfn, tests, --config-file=pyproject.toml ]
         types: [ python ]
         pass_filenames: false
         require_serial: true
@@ -42,7 +45,7 @@ repos:
         name: pylint
         language: system
         entry: pylint
-        args: [ tab_pfn, tests ]
+        args: [ tab_pfn, tests, --rcfile, pyproject.toml ]
         types: [ python ]
         pass_filenames: false
         require_serial: true

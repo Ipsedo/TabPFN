@@ -3,7 +3,24 @@ import torch as th
 from torch import nn
 
 
-class DataEncoder(nn.Module):
+class DataEncoder(nn.Sequential):
+    def __init__(
+        self, x_max_dim: int, hidden_dim: int, output_dim: int
+    ) -> None:
+        super().__init__(
+            nn.Linear(x_max_dim, hidden_dim),
+            nn.Mish(),
+            nn.BatchNorm1d(hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.Mish(),
+            nn.BatchNorm1d(hidden_dim),
+            nn.Linear(hidden_dim, output_dim),
+            nn.Mish(),
+            nn.BatchNorm1d(output_dim),
+        )
+
+
+class DataAndLabelEncoder(nn.Module):
     def __init__(
         self,
         x_max_dim: int,

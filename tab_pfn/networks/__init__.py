@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
-from .encoder import DataEncoder
+from .encoder import DataAndLabelEncoder, DataEncoder
 from .scm import SCM

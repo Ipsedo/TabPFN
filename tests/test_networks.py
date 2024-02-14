@@ -4,7 +4,7 @@ from typing import Tuple
 import pytest
 import torch as th
 
-from tab_pfn.networks import SCM, DataEncoder
+from tab_pfn.networks import SCM, DataAndLabelEncoder, DataEncoder
 
 
 @pytest.mark.parametrize("batch_size", [2, 3])
@@ -50,13 +50,24 @@ def test_data_encoder(
     output_dim: int,
     device: str,
 ) -> None:
-    encoder = DataEncoder(x_dim, nb_class, y_emb_dim, hidden_dim, output_dim)
-    encoder.to(device)
+    data_lbl_enc = DataAndLabelEncoder(
+        x_dim, nb_class, y_emb_dim, hidden_dim, output_dim
+    )
+    data_lbl_enc.to(device)
+
+    date_enc = DataEncoder(x_dim, hidden_dim, output_dim)
+    date_enc.to(device)
 
     x = th.randn(batch_size, x_dim, device=device)
     y = th.randint(0, nb_class, (batch_size,), device=device)
 
-    o = encoder(x, y)
+    o = data_lbl_enc(x, y)
+
+    assert len(o.size()) == 2
+    assert o.size(0) == batch_size
+    assert o.size(1) == output_dim
+
+    o = date_enc(x)
 
     assert len(o.size()) == 2
     assert o.size(0) == batch_size
