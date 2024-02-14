@@ -32,17 +32,8 @@ class DataAndLabelEncoder(nn.Module):
         super().__init__()
 
         self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim)
-
-        self.__encoder = nn.Sequential(
-            nn.Linear(x_max_dim + y_emb_dim, hidden_dim),
-            nn.Mish(),
-            nn.BatchNorm1d(hidden_dim),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.Mish(),
-            nn.BatchNorm1d(hidden_dim),
-            nn.Linear(hidden_dim, output_dim),
-            nn.Mish(),
-            nn.BatchNorm1d(output_dim),
+        self.__encoder = DataEncoder(
+            x_max_dim + y_emb_dim, hidden_dim, output_dim
         )
 
     def forward(self, x: th.Tensor, y: th.Tensor) -> th.Tensor:
