@@ -53,7 +53,7 @@ class SCM(nn.Module):
         cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         cov_mat = cov_mat @ cov_mat.t()
 
-        loc = th.randn(hidden_size)
+        loc = th.randn(hidden_size) * uniform(1e-4, 1e-1)
 
         self.register_buffer("_cov_mat", cov_mat)
         self.register_buffer("_loc", loc)
