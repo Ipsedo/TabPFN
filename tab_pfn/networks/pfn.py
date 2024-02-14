@@ -60,8 +60,9 @@ class TabPFN(nn.Module):
         self,
         max_features: int,
         max_nb_class: int,
-        model_dim: int,
-        hidden_dim: int,
+        encoder_dim: int,
+        ppd_dim: int,
+        ppd_hidden_dim: int,
         nheads: int,
         num_layers: int,
     ) -> None:
@@ -71,18 +72,18 @@ class TabPFN(nn.Module):
             max_features,
             max_nb_class,
             max_features,
-            hidden_dim,
-            model_dim,
+            encoder_dim,
+            ppd_dim,
         )
 
         self.__data_enc = DataEncoder(
             max_features,
-            hidden_dim,
-            model_dim,
+            encoder_dim,
+            ppd_dim,
         )
 
         self.__trf = PPD(
-            model_dim, hidden_dim, nheads, num_layers, max_nb_class
+            ppd_dim, ppd_hidden_dim, nheads, num_layers, max_nb_class
         )
 
     def forward(

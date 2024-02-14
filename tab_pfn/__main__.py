@@ -10,9 +10,10 @@ def main() -> None:
 
     parser.add_argument("--max-features", type=int, default=64)
     parser.add_argument("--max-class", type=int, default=16)
-    parser.add_argument("--model-dim", type=int, default=256)
-    parser.add_argument("--hidden-dim", type=int, default=512)
-    parser.add_argument("--nheads", type=int, default=8)
+    parser.add_argument("--encoder-dim", type=int, default=128)
+    parser.add_argument("--ppd-dim", type=int, default=256)
+    parser.add_argument("--ppd-hidden-dim", type=int, default=512)
+    parser.add_argument("--nheads", type=int, default=4)
     parser.add_argument("--num-layers", type=int, default=6)
     parser.add_argument("--cuda", action="store_true")
 
@@ -32,8 +33,9 @@ def main() -> None:
     model_options = ModelOptions(
         args.max_features,
         args.max_class,
-        args.model_dim,
-        args.hidden_dim,
+        args.encoder_dim,
+        args.ppd_dim,
+        args.ppd_hidden_dim,
         args.nheads,
         args.num_layers,
         args.cuda,

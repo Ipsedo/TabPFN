@@ -117,13 +117,20 @@ def test_tab_pfn(
     nb_class: int,
     device: str,
 ) -> None:
+    encoder_dim = 2
     model_dim = 2
     hidden_dim = 2
     nheads = 1
     num_layers = 1
 
     tab_pfn = TabPFN(
-        max_features, nb_class, model_dim, hidden_dim, nheads, num_layers
+        max_features,
+        nb_class,
+        encoder_dim,
+        model_dim,
+        hidden_dim,
+        nheads,
+        num_layers,
     )
     tab_pfn.to(device)
 

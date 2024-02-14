@@ -7,8 +7,9 @@ from .networks import SCM, TabPFN
 class ModelOptions(NamedTuple):
     max_features: int
     max_class: int
-    model_dim: int
-    hidden_dim: int
+    encoder_dim: int
+    ppd_dim: int
+    ppd_hidden_dim: int
     nheads: int
     num_layers: int
     cuda: bool
@@ -17,8 +18,9 @@ class ModelOptions(NamedTuple):
         return TabPFN(
             self.max_features,
             self.max_class,
-            self.model_dim,
-            self.hidden_dim,
+            self.encoder_dim,
+            self.ppd_dim,
+            self.ppd_hidden_dim,
             self.nheads,
             self.num_layers,
         )
