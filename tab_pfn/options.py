@@ -21,7 +21,11 @@ class ModelOptions(NamedTuple):
 
     def get_scm(self) -> SCM:
         return SCM(
-            0.4, self.max_features, (4, 8), (64, 128), (2, self.max_class)
+            0.4,
+            self.max_features,
+            (4, 8),
+            (64, 128),
+            (2, self.max_class),
         )
 
 
