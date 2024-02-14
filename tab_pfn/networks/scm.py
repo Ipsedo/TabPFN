@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from random import choice, randint
+from random import choice, randint, uniform
 from typing import Callable, List, Tuple
 
 import torch as th
@@ -13,8 +13,9 @@ class SCM(nn.Module):
         self,
         drop_neuron_proba: float,
         n_features: int,
-        layer_bounds: Tuple[int, int] = (4, 16),
-        node_bounds: Tuple[int, int] = (16, 64),
+        layer_bounds: Tuple[int, int] = (4, 8),
+        node_bounds: Tuple[int, int] = (64, 128),
+        class_bounds: Tuple[int, int] = (2, 32),
     ) -> None:
         super().__init__()
 
@@ -26,7 +27,8 @@ class SCM(nn.Module):
             for i in range(n_layer)
         )
 
-        self.__mask = th.ge(th.rand(n_layer, hidden_size), drop_neuron_proba)
+        mask = th.ge(th.rand(n_layer, hidden_size), drop_neuron_proba)
+        self.register_buffer("_mask", mask)
 
         act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
             F.relu,
@@ -39,7 +41,7 @@ class SCM(nn.Module):
             choice(act_fn) for _ in range(n_layer)
         ]
 
-        non_masked_nodes = self.__mask.nonzero()
+        non_masked_nodes = self._mask.nonzero()
         non_masked_nodes = non_masked_nodes[
             th.randperm(non_masked_nodes.size(0))
         ]
@@ -51,19 +53,26 @@ class SCM(nn.Module):
 
         loc = th.randn(hidden_size)
 
-        self.__distribution = MultivariateNormal(loc, cov_mat)
+        self.register_buffer("_cov_mat", cov_mat)
+        self.register_buffer("_loc", loc)
 
         self.__y_idx = non_masked_nodes[n_features + 1]
 
+        self.__nb_class = randint(class_bounds[0], class_bounds[1])
+
+        self.__y_class_intervals: List[float] = []
+
     @th.no_grad()
     def forward(self, batch_size: int) -> Tuple[th.Tensor, th.Tensor]:
+        distribution = MultivariateNormal(self._loc, self._cov_mat)
+
         epsilon_size = th.Size([batch_size])
 
-        out = self.__distribution.sample(epsilon_size)
+        out = distribution.sample(epsilon_size)
         outs = []
 
-        for layer, act, mask in zip(self.__mlp, self.__act, self.__mask):
-            out = layer(out) + self.__distribution.sample(epsilon_size)
+        for layer, act, mask in zip(self.__mlp, self.__act, self._mask):
+            out = layer(out) + distribution.sample(epsilon_size)
             out = act(out)
             out = out * mask[None, :]
             outs.append(out)
@@ -77,4 +86,31 @@ class SCM(nn.Module):
         # select label
         y = outs_stacked[:, *self.__y_idx].squeeze(-1)
 
-        return x, y
+        if len(self.__y_class_intervals) == 0:
+            self.__y_class_intervals = sorted(
+                [
+                    uniform(y.min().item(), y.max().item())
+                    for _ in range(self.__nb_class)
+                ]
+            )
+
+        y_class = self.__split_tensor_based_on_intervals(
+            y, self.__y_class_intervals
+        )
+
+        return x, y_class
+
+    @property
+    def nb_class(self) -> int:
+        return self.__nb_class
+
+    @staticmethod
+    def __split_tensor_based_on_intervals(
+        y_scalar: th.Tensor, intervals: List[float]
+    ) -> th.Tensor:
+        indices = th.zeros_like(
+            y_scalar, dtype=th.long, device=y_scalar.device
+        )
+        for interval in intervals:
+            indices += y_scalar > interval
+        return indices
