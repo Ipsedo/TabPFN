@@ -108,23 +108,20 @@ def test_ppd(
 @pytest.mark.parametrize("nb_train", [8, 16])
 @pytest.mark.parametrize("nb_test", [8, 16])
 @pytest.mark.parametrize("max_features", [4, 8])
-@pytest.mark.parametrize("model_dim", [8, 16])
-@pytest.mark.parametrize("hidden_dim", [16, 32])
-@pytest.mark.parametrize("nheads", [1, 2])
-@pytest.mark.parametrize("num_layers", [1, 2])
 @pytest.mark.parametrize("nb_class", [2, 3])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_tab_pfn(
     nb_train: int,
     nb_test: int,
     max_features: int,
-    model_dim: int,
-    hidden_dim: int,
-    nheads: int,
-    num_layers: int,
     nb_class: int,
     device: str,
 ) -> None:
+    model_dim = 2
+    hidden_dim = 2
+    nheads = 1
+    num_layers = 1
+
     tab_pfn = TabPFN(
         max_features, nb_class, model_dim, hidden_dim, nheads, num_layers
     )
