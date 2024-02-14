@@ -4,7 +4,7 @@ from typing import Tuple
 import pytest
 import torch as th
 
-from tab_pfn.networks import PFN, SCM, DataAndLabelEncoder, DataEncoder
+from tab_pfn.networks import PPD, SCM, DataAndLabelEncoder, DataEncoder, TabPFN
 
 
 @pytest.mark.parametrize("batch_size", [2, 3])
@@ -80,7 +80,7 @@ def test_data_encoder(
 @pytest.mark.parametrize("hidden_dim", [16, 32])
 @pytest.mark.parametrize("nb_class", [2, 3])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_pfn(
+def test_ppd(
     nb_train: int,
     nb_test: int,
     model_dim: int,
@@ -88,13 +88,44 @@ def test_pfn(
     nb_class: int,
     device: str,
 ) -> None:
-    pfn = PFN(model_dim, hidden_dim, nb_class)
+    pfn = PPD(model_dim, hidden_dim, nb_class)
     pfn.to(device)
 
     x_train = th.randn(nb_train, model_dim, device=device)
     x_test = th.randn(nb_test, model_dim, device=device)
 
     out = pfn(x_train, x_test)
+
+    assert len(out.size()) == 2
+    assert out.size(0) == nb_test
+    assert out.size(1) == nb_class
+
+
+@pytest.mark.parametrize("nb_train", [8, 16])
+@pytest.mark.parametrize("nb_test", [8, 16])
+@pytest.mark.parametrize("max_features", [4, 8])
+@pytest.mark.parametrize("model_dim", [8, 16])
+@pytest.mark.parametrize("hidden_dim", [16, 32])
+@pytest.mark.parametrize("nb_class", [2, 3])
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_tab_pfn(
+    nb_train: int,
+    nb_test: int,
+    max_features: int,
+    model_dim: int,
+    hidden_dim: int,
+    nb_class: int,
+    device: str,
+) -> None:
+    tab_pfn = TabPFN(max_features, nb_class, model_dim, hidden_dim)
+    tab_pfn.to(device)
+
+    x_train = th.randn(nb_train, max_features, device=device)
+    y_train = th.randint(0, nb_class, (nb_train,), device=device)
+
+    x_test = th.randn(nb_test, max_features, device=device)
+
+    out = tab_pfn(x_train, y_train, x_test)
 
     assert len(out.size()) == 2
     assert out.size(0) == nb_test
