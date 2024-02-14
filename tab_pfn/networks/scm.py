@@ -115,4 +115,10 @@ class SCM(nn.Module):
         )
         for interval in intervals:
             indices += y_scalar > interval
+
+        permutation = th.arange(0, len(intervals) + 1, device=y_scalar.device)
+        permutation = permutation[th.randperm(permutation.size(0))]
+
+        indices = permutation[indices]
+
         return indices
