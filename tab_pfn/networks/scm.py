@@ -7,7 +7,12 @@ from torch import nn
 from torch.distributions import Normal
 from torch.nn import functional as F
 
-from .functions import beta, init_scm, tnlu, tnlu_int
+from .functions import beta, pad_features, tnlu, tnlu_int
+
+
+def _init_scm(module: nn.Module) -> None:
+    if isinstance(module, nn.Linear):
+        module.weight.data.copy_(tnlu(module.weight.size(), 1e-2, 10, 0.0))
 
 
 class SCM(nn.Module):
@@ -43,51 +48,53 @@ class SCM(nn.Module):
         )
 
         # Z : used for features and label
-        z_node_list = node_list[: self.__n_features]
-        y_node = node_list[self.__n_features]
+        self.__zx_nodes_idx = node_list[: self.__n_features].split(1, dim=1)
+
+        self.__zy_node_idx = node_list[self.__n_features]
+        self.__y_class_intervals: List[float] = []
+
+        self.__nb_class = randint(class_bounds[0], class_bounds[1])
 
         # E : set from which we drop neurons
         e_node_list = node_list[self.__n_features + 1 :]
 
         # drop neurons
         mask_index_i, mask_index_j = th.split(e_node_list, 1, dim=1)
+
         mask = th.ones(n_layer, hidden_size)
         mask[mask_index_i.squeeze(-1), mask_index_j.squeeze(-1)] = (
             drop_neuron_proba < th.rand(e_node_list.size(0))
         ).to(th.float)
+
         self.register_buffer("_mask", mask)
 
+        # activation functions
         act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
             F.relu,
             F.tanh,
             F.leaky_relu,
             F.elu,
+            lambda t: t,  # identity
         ]
 
         self.__act: List[Callable[[th.Tensor], th.Tensor]] = [
             choice(act_fn) for _ in range(n_layer)
         ]
 
-        self.__x_idx = z_node_list.split(1, dim=1)
+        # noise params for SCM (epsilon)
 
         # cov_mat = th.rand(hidden_size, hidden_size)
         # cov_mat = 0.5 * (cov_mat + cov_mat.t())
         # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         # cov_mat = cov_mat @ cov_mat.t()
-        sigma = tnlu((hidden_size,), 1e-4, 0.3, 1e-8)
 
+        sigma = tnlu((hidden_size,), 1e-4, 0.3, 1e-8)
         loc = th.randn(hidden_size) * uniform(1e-4, 1e-1)
 
         self.register_buffer("_sigma", sigma)
         self.register_buffer("_loc", loc)
 
-        self.__y_idx = y_node
-
-        self.__nb_class = randint(class_bounds[0], class_bounds[1])
-
-        self.__y_class_intervals: List[float] = []
-
-        self.apply(init_scm)
+        self.apply(_init_scm)
 
     @th.no_grad()
     def forward(self, batch_size: int) -> Tuple[th.Tensor, th.Tensor]:
@@ -109,9 +116,9 @@ class SCM(nn.Module):
         outs_stacked = th.stack(outs, dim=1)
 
         # select features
-        x = outs_stacked[:, *self.__x_idx].squeeze(-1)
+        x = outs_stacked[:, *self.__zx_nodes_idx].squeeze(-1)
         # select label
-        y = outs_stacked[:, *self.__y_idx].squeeze(-1)
+        y = outs_stacked[:, *self.__zy_node_idx].squeeze(-1)
 
         if len(self.__y_class_intervals) == 0:
             self.__y_class_intervals = sorted(
@@ -128,19 +135,7 @@ class SCM(nn.Module):
         return self.__pad_features(x), y_class
 
     def __pad_features(self, x_to_pad: th.Tensor) -> th.Tensor:
-        if self.__wanted_n_features == self.__n_features:
-            return x_to_pad
-
-        return (
-            F.pad(
-                x_to_pad,
-                (0, self.__wanted_n_features - self.__n_features),
-                mode="constant",
-                value=0,
-            )
-            * self.__wanted_n_features
-            / self.__n_features
-        )
+        return pad_features(x_to_pad, self.__wanted_n_features)
 
     @property
     def nb_class(self) -> int:

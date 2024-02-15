@@ -3,12 +3,7 @@ import math
 from typing import Tuple
 
 import torch as th
-from torch import nn
-
-
-def init_scm(module: nn.Module) -> None:
-    if isinstance(module, nn.Linear):
-        module.weight.data.copy_(tnlu(module.weight.size(), 1e-2, 10, 0.0))
+from torch.nn import functional as F
 
 
 # truncated noise log uniform
@@ -41,3 +36,18 @@ def tnlu_int(
 
 def beta(x: th.Tensor, y: th.Tensor) -> th.Tensor:
     return th.exp(th.lgamma(x) + th.lgamma(y) - th.lgamma(x + y))
+
+
+def pad_features(x_to_pad: th.Tensor, max_features: int) -> th.Tensor:
+    actual_size = x_to_pad.size(1)
+
+    return (
+        F.pad(
+            x_to_pad,
+            (0, max_features - actual_size),
+            mode="constant",
+            value=0,
+        )
+        * max_features
+        / actual_size
+    )
