@@ -5,7 +5,6 @@ from os.path import exists, isdir, join
 import mlflow
 import torch as th
 from torch.nn import functional as F
-from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
 from .metrics import ConfusionMeter, LossMeter
@@ -14,7 +13,6 @@ from .options import ModelOptions, TrainOptions
 
 
 def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
-
     with mlflow.start_run(run_name=train_options.run_name):
         if not exists(train_options.output_folder):
             mkdir(train_options.output_folder)
@@ -60,7 +58,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         loss_meter = LossMeter(window_size)
         confusion_meter = ConfusionMeter(model_options.max_class, window_size)
 
-        for k in range(train_options.n_datasets):
+        tqdm_bar = tqdm(range(train_options.n_datasets))
+        for k in tqdm_bar:
 
             scm = model_options.get_scm()
             scm.to(device)
@@ -72,48 +71,40 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             x_train, y_train = x[:train_index], y[:train_index]
             x_test, y_test = x[train_index:], y[train_index:]
 
-            data_loader = DataLoader(
-                TensorDataset(x_test, y_test),
-                batch_size=train_options.batch_size,
+            out = tab_pfn(x_train, y_train, x_test)
+            loss = F.cross_entropy(out, y_test, reduction="mean")
+
+            optim.zero_grad(set_to_none=True)
+            loss.backward()
+            optim.step()
+            scheduler.step()
+
+            loss_meter.add(loss.item())
+            confusion_meter.add(out, y_test)
+
+            precision = confusion_meter.precision().mean().item()
+            recall = confusion_meter.recall().mean().item()
+
+            tqdm_bar.set_description(
+                f"dataset [{k} / {train_options.n_datasets}] - "
+                f"(n_class={scm.nb_class}) : "
+                f"loss = {loss_meter.loss():.4f}, "
+                f"precision = {precision:.4f}, "
+                f"recall = {recall:.4f}, "
+                f"grad_norm = {tab_pfn.grad_norm():.4f}, "
+                f"lr = {optim.param_groups[0]['lr']:.8f}"
             )
-            tqdm_bar = tqdm(data_loader)
 
-            for x_t, y_t in tqdm_bar:
+            mlflow.log_metrics(
+                {
+                    "loss": loss.item(),
+                    "recall": recall,
+                    "precision": precision,
+                },
+                step=idx,
+            )
 
-                out = tab_pfn(x_train, y_train, x_t)
-                loss = F.cross_entropy(out, y_t, reduction="mean")
-
-                optim.zero_grad(set_to_none=True)
-                loss.backward()
-                optim.step()
-                scheduler.step()
-
-                loss_meter.add(loss.item())
-                confusion_meter.add(out, y_t)
-
-                precision = confusion_meter.precision().mean().item()
-                recall = confusion_meter.recall().mean().item()
-
-                tqdm_bar.set_description(
-                    f"dataset [{k} / {train_options.n_datasets}] - "
-                    f"(n_class={scm.nb_class}) : "
-                    f"loss = {loss_meter.loss():.4f}, "
-                    f"precision = {precision:.4f}, "
-                    f"recall = {recall:.4f}, "
-                    f"grad_norm = {tab_pfn.grad_norm():.4f}, "
-                    f"lr = {scheduler.get_last_lr()[-1]:.8f}"
-                )
-
-                mlflow.log_metrics(
-                    {
-                        "loss": loss.item(),
-                        "recall": recall,
-                        "precision": precision,
-                    },
-                    step=idx,
-                )
-
-                idx += 1
+            idx += 1
 
             th.save(
                 tab_pfn.state_dict(),
