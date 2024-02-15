@@ -5,6 +5,7 @@ from os.path import exists, isdir, join
 import mlflow
 import torch as th
 from torch.nn import functional as F
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from tqdm import tqdm
 
 from .metrics import ConfusionMeter, LossMeter
@@ -42,6 +43,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         # scheduler = warmup_cosine_scheduler(
         #     optim, warmup_proportion, total_steps
         # )
+        scheduler = CosineAnnealingWarmRestarts(optim, 1024)
 
         mlflow.log_params(
             {
@@ -75,7 +77,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             optim.zero_grad(set_to_none=True)
             loss.backward()
             optim.step()
-            # scheduler.step()
+            scheduler.step()
 
             loss_meter.add(loss.item())
             confusion_meter.add(out, y_test)
