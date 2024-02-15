@@ -134,11 +134,12 @@ class SCM(nn.Module):
                 ]
             )
 
-        y_class = self.__split_tensor_based_on_intervals(y)
+        return (
+            self.__pad_shuffle_features(x),
+            self.__scalar_to_shuffled_class(y),
+        )
 
-        return self.__pad_features(x), y_class
-
-    def __pad_features(self, x_to_pad: th.Tensor) -> th.Tensor:
+    def __pad_shuffle_features(self, x_to_pad: th.Tensor) -> th.Tensor:
         padded_features = pad_features(x_to_pad, self.__wanted_n_features)
         return padded_features[:, self.__zx_rand_perm]
 
@@ -146,9 +147,7 @@ class SCM(nn.Module):
     def nb_class(self) -> int:
         return self.__nb_class
 
-    def __split_tensor_based_on_intervals(
-        self, y_scalar: th.Tensor
-    ) -> th.Tensor:
+    def __scalar_to_shuffled_class(self, y_scalar: th.Tensor) -> th.Tensor:
         indices = th.zeros_like(
             y_scalar, dtype=th.long, device=y_scalar.device
         )
