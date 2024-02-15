@@ -39,7 +39,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             * (train_options.n_data * (1.0 - train_options.data_ratio))
             / train_options.batch_size
         )
-        warmup_proportion = 0.1
+        warmup_proportion = 0.4
 
         scheduler = warmup_cosine_scheduler(
             optim, warmup_proportion, total_steps
@@ -52,7 +52,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             }
         )
 
-        idx = 0
+        save_every = 256
 
         window_size = 64
         loss_meter = LossMeter(window_size)
@@ -101,16 +101,15 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     "recall": recall,
                     "precision": precision,
                 },
-                step=idx,
+                step=k,
             )
 
-            idx += 1
-
-            th.save(
-                tab_pfn.state_dict(),
-                join(train_options.output_folder, f"model_{k}.pt"),
-            )
-            th.save(
-                optim.state_dict(),
-                join(train_options.output_folder, f"optim_{k}.pt"),
-            )
+            if k % save_every == save_every - 1:
+                th.save(
+                    tab_pfn.state_dict(),
+                    join(train_options.output_folder, f"model_{k}.pt"),
+                )
+                th.save(
+                    optim.state_dict(),
+                    join(train_options.output_folder, f"optim_{k}.pt"),
+                )

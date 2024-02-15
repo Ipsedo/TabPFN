@@ -22,7 +22,7 @@ def main() -> None:
     train_parser = sub_parser.add_parser("train")
     train_parser.add_argument("run_name", type=str)
     train_parser.add_argument("output_folder", type=str)
-    train_parser.add_argument("--learning-rate", type=float, default=1e-5)
+    train_parser.add_argument("--learning-rate", type=float, default=1e-4)
     train_parser.add_argument("--datasets", type=int, default=2**14)
     train_parser.add_argument("--data", type=int, default=2**13)
     train_parser.add_argument("--data-ratio", type=float, default=0.75)
