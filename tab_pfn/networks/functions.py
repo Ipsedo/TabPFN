@@ -34,6 +34,14 @@ def tnlu_int(
     )
 
 
+def tnlu_float(
+    mu_min: float,
+    mu_max: float,
+    min_value: float,
+) -> float:
+    return tnlu((1,), mu_min, mu_max, min_value).item()
+
+
 def beta(x: th.Tensor, y: th.Tensor) -> th.Tensor:
     return th.exp(th.lgamma(x) + th.lgamma(y) - th.lgamma(x + y))
 

@@ -71,10 +71,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
 
             out = tab_pfn(x_train, y_train, x_test)
             loss = F.cross_entropy(
-                out.permute(0, 2, 1),
-                y_test,
-                reduction="mean",
-                label_smoothing=0.1,
+                out.permute(0, 2, 1), y_test, reduction="mean"
             )
 
             optim.zero_grad(set_to_none=True)

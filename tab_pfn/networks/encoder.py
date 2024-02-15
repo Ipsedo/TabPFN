@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import math
 
 import torch as th
 from torch import nn
@@ -7,16 +6,14 @@ from torch import nn
 
 def _init_encoder(module: nn.Module) -> None:
     if isinstance(module, nn.Linear):
-        nn.init.xavier_normal_(module.weight, gain=1e-3)
+        nn.init.xavier_normal_(module.weight, gain=1e-1)
 
         if module.bias is not None:
-            nn.init.normal_(module.bias, std=1e-3)
+            nn.init.normal_(module.bias, std=1e-1)
 
     elif isinstance(module, nn.BatchNorm1d):
         if module.affine:
-            nn.init.constant_(
-                module.weight, 1.0 / math.sqrt(module.num_features)
-            )
+            nn.init.constant_(module.weight, 1.0)
             nn.init.constant_(module.bias, 0.0)
 
 
