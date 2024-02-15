@@ -35,7 +35,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         )
 
         scheduler = CosineAnnealingWarmRestarts(
-            optim, 1024, T_mult=2, eta_min=1e-6
+            optim, 2**14, T_mult=1, eta_min=1e-6
         )
 
         mlflow.log_params(
@@ -106,6 +106,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     optim.state_dict(),
                     join(train_options.output_folder, f"optim_{k}.pt"),
                 )
-                # confusion_meter.save_conf_matrix(
-                #   k, train_options.output_folder
-                # )
+
+                confusion_meter.save_conf_matrix(
+                    k, train_options.output_folder
+                )
