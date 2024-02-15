@@ -4,10 +4,10 @@ from typing import Callable, List, Tuple
 
 import torch as th
 from torch import nn
-from torch.distributions import MultivariateNormal
+from torch.distributions import Normal
 from torch.nn import functional as F
 
-from .init import init_scm
+from .functions import init_scm, truncated_noise_log_uniform
 
 
 class SCM(nn.Module):
@@ -15,14 +15,16 @@ class SCM(nn.Module):
         self,
         drop_neuron_proba: float,
         n_features: int,
-        layer_bounds: Tuple[int, int],
-        node_bounds: Tuple[int, int],
         class_bounds: Tuple[int, int],
     ) -> None:
         super().__init__()
 
-        n_layer = randint(layer_bounds[0], layer_bounds[1])
-        hidden_size = randint(node_bounds[0], node_bounds[1])
+        n_layer = int(
+            truncated_noise_log_uniform((1,), 1, 6, True, 2.0).item()
+        )
+        hidden_size = int(
+            truncated_noise_log_uniform((1,), 5, 130, True, 4).item()
+        )
 
         self.__mlp = nn.ModuleList(
             nn.Linear(hidden_size, hidden_size, bias=False)
@@ -50,14 +52,17 @@ class SCM(nn.Module):
 
         self.__x_idx = non_masked_nodes[:n_features].split(1, dim=1)
 
-        cov_mat = th.rand(hidden_size, hidden_size)
-        cov_mat = 0.5 * (cov_mat + cov_mat.t())
-        cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
-        cov_mat = cov_mat @ cov_mat.t()
+        # cov_mat = th.rand(hidden_size, hidden_size)
+        # cov_mat = 0.5 * (cov_mat + cov_mat.t())
+        # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
+        # cov_mat = cov_mat @ cov_mat.t()
+        sigma = truncated_noise_log_uniform(
+            (hidden_size,), 1e-4, 0.3, False, 1e-8
+        )
 
         loc = th.randn(hidden_size) * uniform(1e-4, 1e-1)
 
-        self.register_buffer("_cov_mat", cov_mat)
+        self.register_buffer("_sigma", sigma)
         self.register_buffer("_loc", loc)
 
         self.__y_idx = non_masked_nodes[n_features + 1]
@@ -70,7 +75,7 @@ class SCM(nn.Module):
 
     @th.no_grad()
     def forward(self, batch_size: int) -> Tuple[th.Tensor, th.Tensor]:
-        distribution = MultivariateNormal(self._loc, self._cov_mat)
+        distribution = Normal(self._loc, self._sigma)
 
         epsilon_size = th.Size([batch_size])
 

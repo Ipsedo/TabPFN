@@ -29,8 +29,6 @@ class ModelOptions(NamedTuple):
         return SCM(
             0.4,
             self.max_features,
-            (4, 8),
-            (self.max_features, self.max_features * 2),
             (2, self.max_class),
         )
 
