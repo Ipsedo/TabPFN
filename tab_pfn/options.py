@@ -38,5 +38,4 @@ class TrainOptions(NamedTuple):
     n_datasets: int
     n_data: int
     data_ratio: float
-    batch_size: int
     output_folder: str
