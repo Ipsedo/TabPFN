@@ -50,7 +50,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             }
         )
 
-        save_every = 256
+        save_every = 4096
 
         window_size = 64
         loss_meter = LossMeter(window_size)
