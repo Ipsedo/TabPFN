@@ -23,6 +23,7 @@ class SCM(nn.Module):
     ) -> None:
         super().__init__()
 
+        # setup MLP
         n_layer: int = tnlu_int(2, 6, 2)
         hidden_size: int = tnlu_int(5, 130, 4)
 
@@ -31,15 +32,13 @@ class SCM(nn.Module):
             for _ in range(n_layer)
         )
 
-        a = th.tensor(uniform(0.1, 5))
-        b = th.tensor(uniform(0.1, 5))
-        drop_neuron_proba = 0.9 * beta(a, b)
-
+        # create node indexes list
         node_list = th.tensor(
             [[i, j] for i in range(n_layer) for j in range(hidden_size)]
         )
         node_list = node_list[th.randperm(node_list.size(0))]
 
+        # adapt features number
         self.__wanted_n_features = n_features
         self.__n_features = (
             n_features
@@ -59,6 +58,10 @@ class SCM(nn.Module):
         e_node_list = node_list[self.__n_features + 1 :]
 
         # drop neurons
+        a = th.tensor(uniform(0.1, 5))
+        b = th.tensor(uniform(0.1, 5))
+        drop_neuron_proba = 0.9 * beta(a, b)
+
         mask_index_i, mask_index_j = th.split(e_node_list, 1, dim=1)
 
         mask = th.ones(n_layer, hidden_size)
@@ -115,11 +118,11 @@ class SCM(nn.Module):
         # (batch, layer, hidden_features)
         outs_stacked = th.stack(outs, dim=1)
 
-        # select features
+        # select features and label
         x = outs_stacked[:, *self.__zx_nodes_idx].squeeze(-1)
-        # select label
         y = outs_stacked[:, *self.__zy_node_idx].squeeze(-1)
 
+        # create class interval if first time
         if len(self.__y_class_intervals) == 0:
             self.__y_class_intervals = sorted(
                 [
