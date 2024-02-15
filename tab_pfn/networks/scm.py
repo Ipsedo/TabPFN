@@ -18,9 +18,9 @@ class SCM(nn.Module):
     ) -> None:
         super().__init__()
 
-        n_layer = int(truncated_noise_log_uniform((1,), 1, 6, True, 3).item())
+        n_layer = int(truncated_noise_log_uniform((1,), 2, 6, True, 2).item())
         hidden_size = int(
-            truncated_noise_log_uniform((1,), 5, 130, True, 4).item()
+            truncated_noise_log_uniform((1,), 5, 130, True, 2).item()
         )
 
         self.__mlp = nn.ModuleList(
@@ -37,11 +37,21 @@ class SCM(nn.Module):
         )
         node_list = node_list[th.randperm(node_list.size(0))]
 
-        z_node_list = node_list[:n_features]
-        y_node = node_list[n_features]
+        self.__wanted_n_features = n_features
+        self.__n_features = (
+            n_features
+            if n_features + 1 <= node_list.size(0)
+            else node_list.size(0) - 1
+        )
 
-        e_node_list = node_list[n_features + 1 :]
+        # Z : used for features
+        z_node_list = node_list[: self.__n_features]
+        y_node = node_list[self.__n_features]
 
+        # E : set from which we drop neurons
+        e_node_list = node_list[self.__n_features + 1 :]
+
+        # drop neurons
         mask_index_i, mask_index_j = th.split(e_node_list, 1, dim=1)
         mask = th.ones(n_layer, hidden_size)
         mask[mask_index_i.squeeze(-1), mask_index_j.squeeze(-1)] = (
@@ -119,7 +129,22 @@ class SCM(nn.Module):
             y, self.__y_class_intervals
         )
 
-        return x, y_class
+        return self.__pad_features(x), y_class
+
+    def __pad_features(self, x_to_pad: th.Tensor) -> th.Tensor:
+        if self.__wanted_n_features == self.__n_features:
+            return x_to_pad
+
+        return (
+            F.pad(
+                x_to_pad,
+                (0, self.__wanted_n_features - self.__n_features),
+                mode="constant",
+                value=0,
+            )
+            * self.__wanted_n_features
+            / self.__n_features
+        )
 
     @property
     def nb_class(self) -> int:
