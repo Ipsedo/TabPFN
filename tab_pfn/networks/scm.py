@@ -83,7 +83,7 @@ class SCM(nn.Module):
 
         self.__y_idx = y_node
 
-        self.__nb_class = randint(class_bounds[0], class_bounds[1] - 1)
+        self.__nb_class = randint(class_bounds[0], class_bounds[1])
 
         self.__y_class_intervals: List[float] = []
 
