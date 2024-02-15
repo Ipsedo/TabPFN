@@ -79,8 +79,6 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             recall = confusion_meter.recall().mean().item()
 
             tqdm_bar.set_description(
-                f"dataset [{k} / {train_options.n_datasets}] - "
-                f"(n_class={scm.nb_class}) : "
                 f"loss = {loss_meter.loss():.4f}, "
                 f"precision = {precision:.4f}, "
                 f"recall = {recall:.4f}, "
