@@ -44,9 +44,6 @@ def warmup_cosine_scheduler(
     return LambdaLR(optimizer, lr_lambda)
 
 
-# Create the combined scheduler
-
-
 def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
 
     with mlflow.start_run(run_name=train_options.run_name):
