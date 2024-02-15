@@ -25,10 +25,11 @@ class PPD(nn.Module):
                 model_dim,
                 nheads,
                 hidden_dim,
-                activation=F.gelu,
+                activation=F.mish,
                 batch_first=True,
             ),
             num_layers,
+            enable_nested_tensor=False,
         )
 
         self.__to_class = nn.Linear(model_dim, nb_class)
