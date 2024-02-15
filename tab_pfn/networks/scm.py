@@ -48,11 +48,14 @@ class SCM(nn.Module):
 
         # Z : used for features and label
         self.__zx_nodes_idx = node_list[: self.__n_features].split(1, dim=1)
+        self.__zx_rand_perm = th.randperm(self.__wanted_n_features)
 
         self.__zy_node_idx = node_list[self.__n_features]
         self.__y_class_intervals: List[float] = []
 
+        self.__max_nb_class = class_bounds[1]
         self.__nb_class = randint(class_bounds[0], class_bounds[1])
+        self.__zy_rand_perm = th.randperm(self.__max_nb_class)
 
         # E : set from which we drop neurons
         e_node_list = node_list[self.__n_features + 1 :]
@@ -131,31 +134,29 @@ class SCM(nn.Module):
                 ]
             )
 
-        y_class = self.__split_tensor_based_on_intervals(
-            y, self.__y_class_intervals
-        )
+        y_class = self.__split_tensor_based_on_intervals(y)
 
         return self.__pad_features(x), y_class
 
     def __pad_features(self, x_to_pad: th.Tensor) -> th.Tensor:
-        return pad_features(x_to_pad, self.__wanted_n_features)
+        padded_features = pad_features(x_to_pad, self.__wanted_n_features)
+        return padded_features[:, self.__zx_rand_perm]
 
     @property
     def nb_class(self) -> int:
         return self.__nb_class
 
-    @staticmethod
     def __split_tensor_based_on_intervals(
-        y_scalar: th.Tensor, intervals: List[float]
+        self, y_scalar: th.Tensor
     ) -> th.Tensor:
         indices = th.zeros_like(
             y_scalar, dtype=th.long, device=y_scalar.device
         )
-        for interval in intervals:
+        for interval in self.__y_class_intervals:
             indices += y_scalar > interval
 
-        permutation = th.arange(0, len(intervals) + 1, device=y_scalar.device)
-        permutation = permutation[th.randperm(permutation.size(0))]
+        permutation = th.arange(0, self.__max_nb_class, device=y_scalar.device)
+        permutation = permutation[self.__zy_rand_perm]
 
         indices = permutation[indices]
 
