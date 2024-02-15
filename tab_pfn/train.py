@@ -1,47 +1,16 @@
 # -*- coding: utf-8 -*-
-import math
 from os import mkdir
 from os.path import exists, isdir, join
 
 import mlflow
 import torch as th
 from torch.nn import functional as F
-from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
 from .metrics import ConfusionMeter, LossMeter
 from .options import ModelOptions, TrainOptions
-
-
-def linear_warmup(
-    step: int, total_steps: int, warmup_proportion: float
-) -> float:
-    return min(1.0, step / (total_steps * warmup_proportion))
-
-
-def cosine_annealing(
-    step: int, total_steps: int, warmup_proportion: float
-) -> float:
-    if step < total_steps * warmup_proportion:
-        return 1.0
-
-    progress = (step - total_steps * warmup_proportion) / (
-        total_steps * (1 - warmup_proportion)
-    )
-
-    return 0.5 * (1 + math.cos(math.pi * progress))
-
-
-def warmup_cosine_scheduler(
-    optimizer: th.optim.Optimizer, warmup_proportion: float, total_steps: int
-) -> LambdaLR:
-    def lr_lambda(step: int) -> float:
-        return linear_warmup(
-            step, total_steps, warmup_proportion
-        ) * cosine_annealing(step, total_steps, warmup_proportion)
-
-    return LambdaLR(optimizer, lr_lambda)
+from .warmup import warmup_cosine_scheduler
 
 
 def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
