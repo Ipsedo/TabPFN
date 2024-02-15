@@ -111,7 +111,7 @@ class SCM(nn.Module):
             self.__y_class_intervals = sorted(
                 [
                     uniform(y.min().item(), y.max().item())
-                    for _ in range(self.__nb_class)
+                    for _ in range(self.__nb_class - 1)
                 ]
             )
 
