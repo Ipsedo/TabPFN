@@ -1,15 +1,50 @@
 # -*- coding: utf-8 -*-
+import math
 from os import mkdir
 from os.path import exists, isdir, join
 
 import mlflow
 import torch as th
 from torch.nn import functional as F
+from torch.optim.lr_scheduler import LambdaLR
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
 from .metrics import ConfusionMeter, LossMeter
 from .options import ModelOptions, TrainOptions
+
+
+def linear_warmup(
+    step: int, total_steps: int, warmup_proportion: float
+) -> float:
+    return min(1.0, step / (total_steps * warmup_proportion))
+
+
+def cosine_annealing(
+    step: int, total_steps: int, warmup_proportion: float
+) -> float:
+    if step < total_steps * warmup_proportion:
+        return 1.0
+
+    progress = (step - total_steps * warmup_proportion) / (
+        total_steps * (1 - warmup_proportion)
+    )
+
+    return 0.5 * (1 + math.cos(math.pi * progress))
+
+
+def warmup_cosine_scheduler(
+    optimizer: th.optim.Optimizer, warmup_proportion: float, total_steps: int
+) -> LambdaLR:
+    def lr_lambda(step: int) -> float:
+        return linear_warmup(
+            step, total_steps, warmup_proportion
+        ) * cosine_annealing(step, total_steps, warmup_proportion)
+
+    return LambdaLR(optimizer, lr_lambda)
+
+
+# Create the combined scheduler
 
 
 def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
@@ -33,6 +68,17 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
 
         optim = th.optim.Adam(
             tab_pfn.parameters(), lr=train_options.learning_rate
+        )
+
+        total_steps = int(
+            train_options.n_datasets
+            * (train_options.n_data * train_options.data_ratio)
+            / train_options.batch_size
+        )
+        warmup_proportion = 0.1
+
+        scheduler = warmup_cosine_scheduler(
+            optim, warmup_proportion, total_steps
         )
 
         mlflow.log_params(
@@ -79,6 +125,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                 optim.zero_grad(set_to_none=True)
                 loss.backward()
                 optim.step()
+                scheduler.step()
 
                 loss_meter.add(loss.item())
                 confusion_meter.add(out, y_t)
@@ -94,7 +141,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     f"loss = {loss_meter.loss():.4f}, "
                     f"precision = {precision:.4f}, "
                     f"recall = {recall:.4f}, "
-                    f"grad_norm = {tab_pfn.grad_norm():.4f}"
+                    f"grad_norm = {tab_pfn.grad_norm():.4f}, "
+                    f"lr = {scheduler.get_last_lr()[-1]:.8f}"
                 )
 
                 mlflow.log_metrics(
