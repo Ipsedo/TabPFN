@@ -27,7 +27,6 @@ class ModelOptions(NamedTuple):
 
     def get_scm(self) -> SCM:
         return SCM(
-            0.4,
             self.max_features,
             (2, self.max_class),
         )

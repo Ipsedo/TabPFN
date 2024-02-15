@@ -7,23 +7,20 @@ from torch import nn
 from torch.distributions import Normal
 from torch.nn import functional as F
 
-from .functions import init_scm, truncated_noise_log_uniform
+from .functions import beta, init_scm, truncated_noise_log_uniform
 
 
 class SCM(nn.Module):
     def __init__(
         self,
-        drop_neuron_proba: float,
         n_features: int,
         class_bounds: Tuple[int, int],
     ) -> None:
         super().__init__()
 
-        n_layer = int(
-            truncated_noise_log_uniform((1,), 1, 6, True, 2.0).item()
-        )
+        n_layer = int(truncated_noise_log_uniform((1,), 2, 6, True, 3).item())
         hidden_size = int(
-            truncated_noise_log_uniform((1,), 32, 130, True, 4).item()
+            truncated_noise_log_uniform((1,), 5, 128, True, 4).item()
         )
 
         self.__mlp = nn.ModuleList(
@@ -31,7 +28,25 @@ class SCM(nn.Module):
             for _ in range(n_layer)
         )
 
-        mask = th.ge(th.rand(n_layer, hidden_size), drop_neuron_proba)
+        a = th.tensor(uniform(0.1, 5))
+        b = th.tensor(uniform(0.1, 5))
+        drop_neuron_proba = 0.9 * beta(a, b)
+
+        node_list = th.tensor(
+            [[i, j] for i in range(n_layer) for j in range(hidden_size)]
+        )
+        node_list = node_list[th.randperm(node_list.size(0))]
+
+        z_node_list = node_list[:n_features]
+        y_node = node_list[n_features]
+
+        e_node_list = node_list[n_features + 1 :]
+
+        mask_index_i, mask_index_j = th.split(e_node_list, 1, dim=1)
+        mask = th.ones(n_layer, hidden_size)
+        mask[mask_index_i.squeeze(-1), mask_index_j.squeeze(-1)] = (
+            drop_neuron_proba < th.rand(e_node_list.size(0))
+        ).to(th.float)
         self.register_buffer("_mask", mask)
 
         act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
@@ -45,12 +60,8 @@ class SCM(nn.Module):
             choice(act_fn) for _ in range(n_layer)
         ]
 
-        non_masked_nodes = self._mask.nonzero()
-        non_masked_nodes = non_masked_nodes[
-            th.randperm(non_masked_nodes.size(0))
-        ]
-
-        self.__x_idx = non_masked_nodes[:n_features].split(1, dim=1)
+        # self.__x_idx = non_masked_nodes[:n_features].split(1, dim=1)
+        self.__x_idx = z_node_list.split(1, dim=1)
 
         # cov_mat = th.rand(hidden_size, hidden_size)
         # cov_mat = 0.5 * (cov_mat + cov_mat.t())
@@ -65,7 +76,7 @@ class SCM(nn.Module):
         self.register_buffer("_sigma", sigma)
         self.register_buffer("_loc", loc)
 
-        self.__y_idx = non_masked_nodes[n_features + 1]
+        self.__y_idx = y_node
 
         self.__nb_class = randint(class_bounds[0], class_bounds[1] - 1)
 
