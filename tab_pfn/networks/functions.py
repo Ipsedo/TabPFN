@@ -8,18 +8,14 @@ from torch import nn
 
 def init_scm(module: nn.Module) -> None:
     if isinstance(module, nn.Linear):
-        module.weight.data.copy_(
-            truncated_noise_log_uniform(
-                module.weight.size(), 1e-2, 10, False, 0.0
-            )
-        )
+        module.weight.data.copy_(tnlu(module.weight.size(), 1e-2, 10, 0.0))
 
 
-def truncated_noise_log_uniform(
+# truncated noise log uniform
+def tnlu(
     sizes: Tuple[int, ...],
     mu_min: float,
     mu_max: float,
-    to_int: bool,
     min_value: float,
 ) -> th.Tensor:
     log_min = math.log(mu_min)
@@ -30,7 +26,17 @@ def truncated_noise_log_uniform(
 
     sample = th.clamp(th.normal(mu, sigma), 0.0, th.inf) + min_value
 
-    return th.round(sample).to(th.int) if to_int else sample
+    return sample
+
+
+def tnlu_int(
+    mu_min: int,
+    mu_max: int,
+    min_value: int,
+) -> int:
+    return int(
+        th.round(tnlu((1,), mu_min, mu_max, min_value)).to(th.int).item()
+    )
 
 
 def beta(x: th.Tensor, y: th.Tensor) -> th.Tensor:

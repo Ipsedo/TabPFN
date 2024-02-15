@@ -78,15 +78,10 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             )
             tqdm_bar = tqdm(data_loader)
 
-            class_weight = th.zeros(model_options.max_class, device=device)
-            class_weight[: scm.nb_class] = 1
-
             for x_t, y_t in tqdm_bar:
 
                 out = tab_pfn(x_train, y_train, x_t)
-                loss = F.cross_entropy(
-                    out, y_t, reduction="mean", weight=class_weight
-                )
+                loss = F.cross_entropy(out, y_t, reduction="mean")
 
                 optim.zero_grad(set_to_none=True)
                 loss.backward()
@@ -96,10 +91,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                 loss_meter.add(loss.item())
                 confusion_meter.add(out, y_t)
 
-                precision = (
-                    confusion_meter.precision().sum().item() / scm.nb_class
-                )
-                recall = confusion_meter.recall().sum().item() / scm.nb_class
+                precision = confusion_meter.precision().mean().item()
+                recall = confusion_meter.recall().mean().item()
 
                 tqdm_bar.set_description(
                     f"dataset [{k} / {train_options.n_datasets}] - "

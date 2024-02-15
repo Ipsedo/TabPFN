@@ -7,7 +7,7 @@ from torch import nn
 from torch.distributions import Normal
 from torch.nn import functional as F
 
-from .functions import beta, init_scm, truncated_noise_log_uniform
+from .functions import beta, init_scm, tnlu, tnlu_int
 
 
 class SCM(nn.Module):
@@ -18,10 +18,8 @@ class SCM(nn.Module):
     ) -> None:
         super().__init__()
 
-        n_layer = int(truncated_noise_log_uniform((1,), 2, 6, True, 2).item())
-        hidden_size = int(
-            truncated_noise_log_uniform((1,), 5, 130, True, 2).item()
-        )
+        n_layer: int = tnlu_int(2, 6, 2)
+        hidden_size: int = tnlu_int(5, 130, 4)
 
         self.__mlp = nn.ModuleList(
             nn.Linear(hidden_size, hidden_size, bias=False)
@@ -44,7 +42,7 @@ class SCM(nn.Module):
             else node_list.size(0) - 1
         )
 
-        # Z : used for features
+        # Z : used for features and label
         z_node_list = node_list[: self.__n_features]
         y_node = node_list[self.__n_features]
 
@@ -76,9 +74,7 @@ class SCM(nn.Module):
         # cov_mat = 0.5 * (cov_mat + cov_mat.t())
         # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         # cov_mat = cov_mat @ cov_mat.t()
-        sigma = truncated_noise_log_uniform(
-            (hidden_size,), 1e-4, 0.3, False, 1e-8
-        )
+        sigma = tnlu((hidden_size,), 1e-4, 0.3, 1e-8)
 
         loc = th.randn(hidden_size) * uniform(1e-4, 1e-1)
 
