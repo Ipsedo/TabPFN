@@ -9,8 +9,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
 from .metrics import ConfusionMeter, LossMeter
+from .networks import warmup_cosine_scheduler
 from .options import ModelOptions, TrainOptions
-from .warmup import warmup_cosine_scheduler
 
 
 def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
