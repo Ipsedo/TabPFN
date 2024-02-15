@@ -23,7 +23,7 @@ class SCM(nn.Module):
             truncated_noise_log_uniform((1,), 1, 6, True, 2.0).item()
         )
         hidden_size = int(
-            truncated_noise_log_uniform((1,), 5, 130, True, 4).item()
+            truncated_noise_log_uniform((1,), 32, 130, True, 4).item()
         )
 
         self.__mlp = nn.ModuleList(
