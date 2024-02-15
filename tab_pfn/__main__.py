@@ -27,7 +27,7 @@ def main() -> None:
     train_parser.add_argument("--batch-size", type=int, default=6)
     train_parser.add_argument("--data", type=int, default=2**11)
     train_parser.add_argument("--data-ratio", type=float, default=0.75)
-    train_parser.add_argument("--save-every", type=int, default=4096)
+    train_parser.add_argument("--save-every", type=int, default=1024)
     train_parser.add_argument("--metric-window-size", type=int, default=64)
 
     args = parser.parse_args()
