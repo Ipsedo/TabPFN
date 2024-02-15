@@ -34,16 +34,9 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             tab_pfn.parameters(), lr=train_options.learning_rate
         )
 
-        # total_steps = int(
-        #     train_options.n_datasets
-        #     * (train_options.n_data * (1.0 - train_options.data_ratio))
-        # )
-        # warmup_proportion = 0.1
-
-        # scheduler = warmup_cosine_scheduler(
-        #     optim, warmup_proportion, total_steps
-        # )
-        scheduler = CosineAnnealingWarmRestarts(optim, 1024)
+        scheduler = CosineAnnealingWarmRestarts(
+            optim, 1024, T_mult=2, eta_min=1e-6
+        )
 
         mlflow.log_params(
             {
