@@ -18,9 +18,9 @@ class SCM(nn.Module):
     ) -> None:
         super().__init__()
 
-        n_layer = int(truncated_noise_log_uniform((1,), 2, 6, True, 3).item())
+        n_layer = int(truncated_noise_log_uniform((1,), 1, 6, True, 3).item())
         hidden_size = int(
-            truncated_noise_log_uniform((1,), 5, 128, True, 4).item()
+            truncated_noise_log_uniform((1,), 5, 130, True, 4).item()
         )
 
         self.__mlp = nn.ModuleList(
@@ -60,7 +60,6 @@ class SCM(nn.Module):
             choice(act_fn) for _ in range(n_layer)
         ]
 
-        # self.__x_idx = non_masked_nodes[:n_features].split(1, dim=1)
         self.__x_idx = z_node_list.split(1, dim=1)
 
         # cov_mat = th.rand(hidden_size, hidden_size)
