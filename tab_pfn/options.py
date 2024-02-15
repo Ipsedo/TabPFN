@@ -38,4 +38,6 @@ class TrainOptions(NamedTuple):
     n_datasets: int
     n_data: int
     data_ratio: float
+    save_every: int
+    metric_window_size: int
     output_folder: str

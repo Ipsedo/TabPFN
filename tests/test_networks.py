@@ -28,6 +28,8 @@ def test_scm(
 
     assert len(y.size()) == 1
     assert y.size(0) == batch_size
+    assert th.all(y >= 0)
+    assert th.all(y <= class_bound[1])
 
 
 @pytest.mark.parametrize("batch_size", [2, 3])

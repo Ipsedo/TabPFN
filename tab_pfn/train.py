@@ -45,13 +45,13 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             }
         )
 
-        save_every = 4096
-
-        window_size = 64
-        loss_meter = LossMeter(window_size)
-        confusion_meter = ConfusionMeter(model_options.max_class, window_size)
+        loss_meter = LossMeter(train_options.metric_window_size)
+        confusion_meter = ConfusionMeter(
+            model_options.max_class, train_options.metric_window_size
+        )
 
         tqdm_bar = tqdm(range(train_options.n_datasets))
+
         for k in tqdm_bar:
 
             scm = model_options.get_scm()
@@ -97,7 +97,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                 step=k,
             )
 
-            if k % save_every == save_every - 1:
+            if k % train_options.save_every == train_options.save_every - 1:
                 th.save(
                     tab_pfn.state_dict(),
                     join(train_options.output_folder, f"model_{k}.pt"),
@@ -106,3 +106,6 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     optim.state_dict(),
                     join(train_options.output_folder, f"optim_{k}.pt"),
                 )
+                # confusion_meter.save_conf_matrix(
+                #   k, train_options.output_folder
+                # )

@@ -96,9 +96,7 @@ class ConfusionMeter(Meter[th.Tensor, Tuple[th.Tensor, th.Tensor]]):
 
         return recs
 
-    def save_conf_matrix(
-        self, epoch: int, output_dir: str, stage: str
-    ) -> None:
+    def save_conf_matrix(self, epoch: int, output_dir: str) -> None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
@@ -107,13 +105,11 @@ class ConfusionMeter(Meter[th.Tensor, Tuple[th.Tensor, th.Tensor]]):
         cax = ax.matshow(conf_mat_normalized.tolist(), cmap="plasma")
         fig.colorbar(cax)
 
-        ax.set_title(f"confusion matrix epoch {epoch} - {stage}")
+        ax.set_title(f"confusion matrix epoch {epoch}")
         ax.set_ylabel("True Label")
         ax.set_xlabel("Predicated Label")
 
-        fig.savefig(
-            join(output_dir, f"confusion_matrix_epoch_{epoch}_{stage}.png")
-        )
+        fig.savefig(join(output_dir, f"confusion_matrix_epoch_{epoch}.png"))
 
         plt.close()
 

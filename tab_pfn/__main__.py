@@ -26,6 +26,8 @@ def main() -> None:
     train_parser.add_argument("--datasets", type=int, default=2**18)
     train_parser.add_argument("--data", type=int, default=2**11)
     train_parser.add_argument("--data-ratio", type=float, default=0.75)
+    train_parser.add_argument("--save-every", type=int, default=4096)
+    train_parser.add_argument("--metric-window-size", type=int, default=64)
 
     args = parser.parse_args()
 
@@ -48,6 +50,8 @@ def main() -> None:
             args.datasets,
             args.data,
             args.data_ratio,
+            args.save_every,
+            args.metric_window_size,
             args.output_folder,
         )
 
