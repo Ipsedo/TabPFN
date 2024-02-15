@@ -35,7 +35,8 @@ class ModelOptions(NamedTuple):
 class TrainOptions(NamedTuple):
     run_name: str
     learning_rate: float
-    n_datasets: int
+    steps: int
+    batch_size: int
     n_data: int
     data_ratio: float
     save_every: int

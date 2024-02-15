@@ -35,7 +35,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         )
 
         scheduler = CosineAnnealingWarmRestarts(
-            optim, train_options.n_datasets, eta_min=1e-6
+            optim, train_options.steps, eta_min=1e-6
         )
 
         mlflow.log_params(
@@ -50,14 +50,19 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             model_options.max_class, train_options.metric_window_size
         )
 
-        tqdm_bar = tqdm(range(train_options.n_datasets))
+        tqdm_bar = tqdm(range(train_options.steps))
 
-        for k in tqdm_bar:
+        for s in tqdm_bar:
 
-            scm = model_options.get_scm()
-            scm.to(device)
+            x_batch, y_batch = zip(
+                *[
+                    model_options.get_scm()(train_options.n_data)
+                    for _ in range(train_options.batch_size)
+                ]
+            )
 
-            x, y = scm(train_options.n_data)
+            x = th.cat(x_batch, dim=0).to(device)
+            y = th.cat(y_batch, dim=0).to(device)
 
             train_index = int(train_options.data_ratio * train_options.n_data)
 
@@ -92,19 +97,19 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     "recall": recall,
                     "precision": precision,
                 },
-                step=k,
+                step=s,
             )
 
-            if k % train_options.save_every == train_options.save_every - 1:
+            if s % train_options.save_every == train_options.save_every - 1:
                 th.save(
                     tab_pfn.state_dict(),
-                    join(train_options.output_folder, f"model_{k}.pt"),
+                    join(train_options.output_folder, f"model_{s}.pt"),
                 )
                 th.save(
                     optim.state_dict(),
-                    join(train_options.output_folder, f"optim_{k}.pt"),
+                    join(train_options.output_folder, f"optim_{s}.pt"),
                 )
 
                 confusion_meter.save_conf_matrix(
-                    k, train_options.output_folder
+                    s, train_options.output_folder
                 )

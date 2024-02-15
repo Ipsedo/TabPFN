@@ -23,7 +23,8 @@ def main() -> None:
     train_parser.add_argument("run_name", type=str)
     train_parser.add_argument("output_folder", type=str)
     train_parser.add_argument("--learning-rate", type=float, default=1e-4)
-    train_parser.add_argument("--datasets", type=int, default=2**18)
+    train_parser.add_argument("--steps", type=int, default=2**14)
+    train_parser.add_argument("--batch-size", type=int, default=6)
     train_parser.add_argument("--data", type=int, default=2**11)
     train_parser.add_argument("--data-ratio", type=float, default=0.75)
     train_parser.add_argument("--save-every", type=int, default=4096)
@@ -47,7 +48,8 @@ def main() -> None:
         train_options = TrainOptions(
             args.run_name,
             args.learning_rate,
-            args.datasets,
+            args.steps,
+            args.batch_size,
             args.data,
             args.data_ratio,
             args.save_every,
