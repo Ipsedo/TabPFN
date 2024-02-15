@@ -9,7 +9,7 @@ def main() -> None:
     parser = argparse.ArgumentParser("tab_pfn main")
 
     parser.add_argument("--max-features", type=int, default=64)
-    parser.add_argument("--max-class", type=int, default=16)
+    parser.add_argument("--max-class", type=int, default=8)
     parser.add_argument("--encoder-dim", type=int, default=128)
     parser.add_argument("--ppd-dim", type=int, default=256)
     parser.add_argument("--ppd-hidden-dim", type=int, default=512)
@@ -26,7 +26,7 @@ def main() -> None:
     train_parser.add_argument("--datasets", type=int, default=2**10)
     train_parser.add_argument("--data", type=int, default=2**14)
     train_parser.add_argument("--data-ratio", type=float, default=0.6)
-    train_parser.add_argument("--batch-size", type=int, default=256)
+    train_parser.add_argument("--batch-size", type=int, default=32)
 
     args = parser.parse_args()
 
