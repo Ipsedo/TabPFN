@@ -35,7 +35,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         )
 
         scheduler = CosineAnnealingWarmRestarts(
-            optim, train_options.steps, eta_min=1e-6
+            optim, train_options.steps, eta_min=1e-7
         )
 
         mlflow.log_params(
@@ -61,16 +61,21 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                 ]
             )
 
-            x = th.cat(x_batch, dim=0).to(device)
-            y = th.cat(y_batch, dim=0).to(device)
+            x = th.stack(x_batch, dim=0).to(device)
+            y = th.stack(y_batch, dim=0).to(device)
 
             train_index = int(train_options.data_ratio * train_options.n_data)
 
-            x_train, y_train = x[:train_index], y[:train_index]
-            x_test, y_test = x[train_index:], y[train_index:]
+            x_train, y_train = x[:, :train_index], y[:, :train_index]
+            x_test, y_test = x[:, train_index:], y[:, train_index:]
 
             out = tab_pfn(x_train, y_train, x_test)
-            loss = F.cross_entropy(out, y_test, reduction="mean")
+            loss = F.cross_entropy(
+                out.permute(0, 2, 1),
+                y_test,
+                reduction="mean",
+                label_smoothing=0.1,
+            )
 
             optim.zero_grad(set_to_none=True)
             loss.backward()
@@ -78,7 +83,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             scheduler.step()
 
             loss_meter.add(loss.item())
-            confusion_meter.add(out, y_test)
+            confusion_meter.add(out.flatten(0, 1), y_test.flatten(0, 1))
 
             precision = confusion_meter.precision().mean().item()
             recall = confusion_meter.recall().mean().item()

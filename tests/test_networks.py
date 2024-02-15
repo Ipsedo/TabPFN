@@ -33,6 +33,7 @@ def test_scm(
 
 
 @pytest.mark.parametrize("batch_size", [2, 3])
+@pytest.mark.parametrize("n_data", [2, 3])
 @pytest.mark.parametrize("x_dim", [64, 128])
 @pytest.mark.parametrize("nb_class", [3, 4])
 @pytest.mark.parametrize("y_emb_dim", [64, 128])
@@ -41,6 +42,7 @@ def test_scm(
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_data_encoder(
     batch_size: int,
+    n_data: int,
     x_dim: int,
     nb_class: int,
     y_emb_dim: int,
@@ -56,22 +58,25 @@ def test_data_encoder(
     date_enc = DataEncoder(x_dim, hidden_dim, output_dim)
     date_enc.to(device)
 
-    x = th.randn(batch_size, x_dim, device=device)
-    y = th.randint(0, nb_class, (batch_size,), device=device)
+    x = th.randn(batch_size, n_data, x_dim, device=device)
+    y = th.randint(0, nb_class, (batch_size, n_data), device=device)
 
     o = data_lbl_enc(x, y)
 
-    assert len(o.size()) == 2
+    assert len(o.size()) == 3
     assert o.size(0) == batch_size
-    assert o.size(1) == output_dim
+    assert o.size(1) == n_data
+    assert o.size(2) == output_dim
 
     o = date_enc(x)
 
-    assert len(o.size()) == 2
+    assert len(o.size()) == 3
     assert o.size(0) == batch_size
-    assert o.size(1) == output_dim
+    assert o.size(1) == n_data
+    assert o.size(2) == output_dim
 
 
+@pytest.mark.parametrize("batch_size", [1, 2])
 @pytest.mark.parametrize("nb_train", [8, 16])
 @pytest.mark.parametrize("nb_test", [8, 16])
 @pytest.mark.parametrize("model_dim", [8, 16])
@@ -81,6 +86,7 @@ def test_data_encoder(
 @pytest.mark.parametrize("nb_class", [2, 3])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_ppd(
+    batch_size: int,
     nb_train: int,
     nb_test: int,
     model_dim: int,
@@ -93,22 +99,25 @@ def test_ppd(
     pfn = PPD(model_dim, hidden_dim, nheads, num_layers, nb_class)
     pfn.to(device)
 
-    x_train = th.randn(nb_train, model_dim, device=device)
-    x_test = th.randn(nb_test, model_dim, device=device)
+    x_train = th.randn(batch_size, nb_train, model_dim, device=device)
+    x_test = th.randn(batch_size, nb_test, model_dim, device=device)
 
     out = pfn(x_train, x_test)
 
-    assert len(out.size()) == 2
-    assert out.size(0) == nb_test
-    assert out.size(1) == nb_class
+    assert len(out.size()) == 3
+    assert out.size(0) == batch_size
+    assert out.size(1) == nb_test
+    assert out.size(2) == nb_class
 
 
+@pytest.mark.parametrize("batch_size", [1, 2])
 @pytest.mark.parametrize("nb_train", [8, 16])
 @pytest.mark.parametrize("nb_test", [8, 16])
 @pytest.mark.parametrize("max_features", [4, 8])
 @pytest.mark.parametrize("nb_class", [2, 3])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_tab_pfn(
+    batch_size: int,
     nb_train: int,
     nb_test: int,
     max_features: int,
@@ -132,13 +141,22 @@ def test_tab_pfn(
     )
     tab_pfn.to(device)
 
-    x_train = th.randn(nb_train, max_features, device=device)
-    y_train = th.randint(0, nb_class, (nb_train,), device=device)
+    x_train = th.randn(batch_size, nb_train, max_features, device=device)
+    y_train = th.randint(
+        0,
+        nb_class,
+        (
+            batch_size,
+            nb_train,
+        ),
+        device=device,
+    )
 
-    x_test = th.randn(nb_test, max_features, device=device)
+    x_test = th.randn(batch_size, nb_test, max_features, device=device)
 
     out = tab_pfn(x_train, y_train, x_test)
 
-    assert len(out.size()) == 2
-    assert out.size(0) == nb_test
-    assert out.size(1) == nb_class
+    assert len(out.size()) == 3
+    assert out.size(0) == batch_size
+    assert out.size(1) == nb_test
+    assert out.size(2) == nb_class

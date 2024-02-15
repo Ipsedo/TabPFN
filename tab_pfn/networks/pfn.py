@@ -38,9 +38,9 @@ class PPD(nn.Module):
     def __get_mask(
         x_train: th.Tensor, x_test: th.Tensor, device: str
     ) -> th.Tensor:
-        mask = th.eye(x_train.size(0) + x_test.size(0), device=device)
+        mask = th.eye(x_train.size(1) + x_test.size(1), device=device)
 
-        mask[:, : x_train.size(0)] = 1
+        mask[:, : x_train.size(1)] = 1
 
         return mask
 
@@ -49,10 +49,10 @@ class PPD(nn.Module):
 
         src_mask = self.__get_mask(x_train, x_test, device)
 
-        enc_input = th.cat([x_train, x_test], dim=0)
+        enc_input = th.cat([x_train, x_test], dim=1)
 
         out: th.Tensor = self.__trf(enc_input, mask=src_mask)[
-            x_train.size(0) :, :
+            :, x_train.size(1) :, :
         ]
         out = self.__to_class(out)
 

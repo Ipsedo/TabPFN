@@ -27,13 +27,13 @@ class DataEncoder(nn.Sequential):
         super().__init__(
             nn.Linear(x_max_dim, hidden_dim),
             nn.Mish(),
-            nn.BatchNorm1d(hidden_dim),
+            nn.LayerNorm(hidden_dim),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Mish(),
-            nn.BatchNorm1d(hidden_dim),
+            nn.LayerNorm(hidden_dim),
             nn.Linear(hidden_dim, output_dim),
             nn.Mish(),
-            nn.BatchNorm1d(output_dim),
+            nn.LayerNorm(output_dim),
         )
 
         self.apply(_init_encoder)
@@ -58,7 +58,7 @@ class DataAndLabelEncoder(nn.Module):
     def forward(self, x: th.Tensor, y: th.Tensor) -> th.Tensor:
         y_emb = self.__y_emb(y)
 
-        out = th.cat([x, y_emb], dim=1)
+        out = th.cat([x, y_emb], dim=2)
         out = self.__encoder(out)
 
         return out
