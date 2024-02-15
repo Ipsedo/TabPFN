@@ -8,13 +8,13 @@ from .train import train
 def main() -> None:
     parser = argparse.ArgumentParser("tab_pfn main")
 
-    parser.add_argument("--max-features", type=int, default=64)
-    parser.add_argument("--max-class", type=int, default=8)
-    parser.add_argument("--encoder-dim", type=int, default=128)
-    parser.add_argument("--ppd-dim", type=int, default=256)
-    parser.add_argument("--ppd-hidden-dim", type=int, default=512)
+    parser.add_argument("--max-features", type=int, default=100)
+    parser.add_argument("--max-class", type=int, default=10)
+    parser.add_argument("--encoder-dim", type=int, default=256)
+    parser.add_argument("--ppd-dim", type=int, default=512)
+    parser.add_argument("--ppd-hidden-dim", type=int, default=1024)
     parser.add_argument("--nheads", type=int, default=4)
-    parser.add_argument("--num-layers", type=int, default=6)
+    parser.add_argument("--num-layers", type=int, default=12)
     parser.add_argument("--cuda", action="store_true")
 
     sub_parser = parser.add_subparsers(dest="mode")
