@@ -7,15 +7,17 @@ from torch import nn
 from torch.distributions import MultivariateNormal
 from torch.nn import functional as F
 
+from .init import init_scm
+
 
 class SCM(nn.Module):
     def __init__(
         self,
         drop_neuron_proba: float,
         n_features: int,
-        layer_bounds: Tuple[int, int] = (4, 8),
-        node_bounds: Tuple[int, int] = (64, 128),
-        class_bounds: Tuple[int, int] = (2, 16),
+        layer_bounds: Tuple[int, int],
+        node_bounds: Tuple[int, int],
+        class_bounds: Tuple[int, int],
     ) -> None:
         super().__init__()
 
@@ -24,7 +26,7 @@ class SCM(nn.Module):
 
         self.__mlp = nn.ModuleList(
             nn.Linear(hidden_size, hidden_size, bias=False)
-            for i in range(n_layer)
+            for _ in range(n_layer)
         )
 
         mask = th.ge(th.rand(n_layer, hidden_size), drop_neuron_proba)
@@ -63,6 +65,8 @@ class SCM(nn.Module):
         self.__nb_class = randint(class_bounds[0], class_bounds[1] - 1)
 
         self.__y_class_intervals: List[float] = []
+
+        self.apply(init_scm)
 
     @th.no_grad()
     def forward(self, batch_size: int) -> Tuple[th.Tensor, th.Tensor]:

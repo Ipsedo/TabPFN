@@ -9,13 +9,13 @@ class DataEncoder(nn.Sequential):
     ) -> None:
         super().__init__(
             nn.Linear(x_max_dim, hidden_dim),
-            nn.Mish(),
+            nn.GELU(),
             nn.BatchNorm1d(hidden_dim),
             nn.Linear(hidden_dim, hidden_dim),
-            nn.Mish(),
+            nn.GELU(),
             nn.BatchNorm1d(hidden_dim),
             nn.Linear(hidden_dim, output_dim),
-            nn.Mish(),
+            nn.GELU(),
             nn.BatchNorm1d(output_dim),
         )
 
