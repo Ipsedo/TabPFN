@@ -1,3 +1,4 @@
 # -*- coding: utf-8 -*-
-from .options import ModelOptions, TrainOptions
+from .infer import infer
+from .options import InferOptions, ModelOptions, TrainOptions
 from .train import train
