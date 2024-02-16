@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from os import mkdir
 from os.path import exists, isdir, join
+from random import uniform
 
 import mlflow
 import torch as th
@@ -67,7 +68,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             x = th.stack(x_batch, dim=0).to(device)
             y = th.stack(y_batch, dim=0).to(device)
 
-            train_index = int(train_options.data_ratio * train_options.n_data)
+            # train_index = int(train_options.data_ratio * train_options.n_data)
+            train_index = int(uniform(0.25, 0.75) * train_options.n_data)
 
             x_train, y_train = x[:, :train_index], y[:, :train_index]
             x_test, y_test = x[:, train_index:], y[:, train_index:]
