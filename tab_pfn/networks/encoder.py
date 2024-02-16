@@ -11,8 +11,8 @@ def _init_encoder(module: nn.Module) -> None:
         if module.bias is not None:
             nn.init.normal_(module.bias, std=1e-1)
 
-    elif isinstance(module, nn.BatchNorm1d):
-        if module.affine:
+    elif isinstance(module, nn.LayerNorm):
+        if module.elementwise_affine:
             nn.init.constant_(module.weight, 1.0)
             nn.init.constant_(module.bias, 0.0)
 

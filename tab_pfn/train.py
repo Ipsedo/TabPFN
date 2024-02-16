@@ -35,7 +35,10 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         )
 
         scheduler = CosineAnnealingWarmRestarts(
-            optim, train_options.steps, eta_min=1e-7
+            optim,
+            train_options.warmup_steps,
+            T_mult=train_options.warmup_steps_mult,
+            eta_min=train_options.warmup_min_lr,
         )
 
         mlflow.log_params(

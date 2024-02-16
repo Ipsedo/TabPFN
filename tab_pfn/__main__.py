@@ -24,9 +24,12 @@ def main() -> None:
     train_parser.add_argument("output_folder", type=str)
     train_parser.add_argument("--learning-rate", type=float, default=1e-4)
     train_parser.add_argument("--steps", type=int, default=2**16)
-    train_parser.add_argument("--batch-size", type=int, default=6)
-    train_parser.add_argument("--data", type=int, default=2**11)
+    train_parser.add_argument("--batch-size", type=int, default=3)
+    train_parser.add_argument("--data", type=int, default=2**12)
     train_parser.add_argument("--data-ratio", type=float, default=0.75)
+    train_parser.add_argument("--warmup-steps", type=int, default=1024)
+    train_parser.add_argument("--warmup-steps-mult", type=int, default=2)
+    train_parser.add_argument("--warmup-min-lr", type=float, default=1e-6)
     train_parser.add_argument("--save-every", type=int, default=1024)
     train_parser.add_argument("--metric-window-size", type=int, default=64)
 
@@ -54,6 +57,9 @@ def main() -> None:
             args.data_ratio,
             args.save_every,
             args.metric_window_size,
+            args.warmup_steps,
+            args.warmup_steps_mult,
+            args.warmup_min_lr,
             args.output_folder,
         )
 
