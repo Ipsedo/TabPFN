@@ -30,6 +30,7 @@ class CsvDataset(Dataset):
             self.__columns = list(
                 set(self.__df.columns) - {self.__target_columns}
             )
+            assert len(self.__columns) > 0
         else:
             assert all(c in self.__df.columns for c in columns)
             self.__columns = columns

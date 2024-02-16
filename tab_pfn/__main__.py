@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import argparse
 
-from .options import ModelOptions, TrainOptions
+from .infer import infer
+from .options import InferOptions, ModelOptions, TrainOptions
 from .train import train
 
 
@@ -33,6 +34,10 @@ def main() -> None:
     train_parser.add_argument("--save-every", type=int, default=1024)
     train_parser.add_argument("--metric-window-size", type=int, default=64)
 
+    infer_parser = sub_parser.add_parser("infer")
+    infer_parser.add_argument("csv_path", type=str)
+    infer_parser.add_argument("state_dict", type=str)
+
     args = parser.parse_args()
 
     model_options = ModelOptions(
@@ -47,7 +52,6 @@ def main() -> None:
     )
 
     if args.mode == "train":
-
         train_options = TrainOptions(
             args.run_name,
             args.learning_rate,
@@ -64,6 +68,13 @@ def main() -> None:
         )
 
         train(model_options, train_options)
+    elif args.mode == "infer":
+        infer_options = InferOptions(
+            args.csv_path,
+            args.state_dict,
+        )
+
+        infer(model_options, infer_options)
     else:
         parser.error(f"Unknown mode: {args.mode}")
 

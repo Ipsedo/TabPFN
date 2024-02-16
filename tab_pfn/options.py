@@ -45,3 +45,8 @@ class TrainOptions(NamedTuple):
     warmup_steps_mult: int
     warmup_min_lr: float
     output_folder: str
+
+
+class InferOptions(NamedTuple):
+    csv_path: str
+    state_dict: str
