@@ -11,10 +11,21 @@ def _init_encoder(module: nn.Module) -> None:
         if module.bias is not None:
             nn.init.normal_(module.bias, std=1e-1)
 
-    elif isinstance(module, nn.LayerNorm):
-        if module.elementwise_affine:
+    elif isinstance(module, nn.BatchNorm1d):
+        if module.affine:
             nn.init.constant_(module.weight, 1.0)
             nn.init.constant_(module.bias, 0.0)
+
+
+class _SeqWrapper(nn.Module):
+    def __init__(self, module: nn.Module) -> None:
+        super().__init__()
+        self.__module = module
+
+    def forward(self, x: th.Tensor) -> th.Tensor:
+        b, l, c = x.size()
+        out: th.Tensor = self.__module(x.view(-1, c)).view(b, l, -1)
+        return out
 
 
 class DataEncoder(nn.Sequential):
@@ -24,13 +35,13 @@ class DataEncoder(nn.Sequential):
         super().__init__(
             nn.Linear(x_max_dim, hidden_dim),
             nn.Mish(),
-            nn.LayerNorm(hidden_dim),
+            _SeqWrapper(nn.BatchNorm1d(hidden_dim)),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Mish(),
-            nn.LayerNorm(hidden_dim),
+            _SeqWrapper(nn.BatchNorm1d(hidden_dim)),
             nn.Linear(hidden_dim, output_dim),
             nn.Mish(),
-            nn.LayerNorm(output_dim),
+            _SeqWrapper(nn.BatchNorm1d(output_dim)),
         )
 
         self.apply(_init_encoder)
