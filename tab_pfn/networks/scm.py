@@ -40,10 +40,8 @@ class SCM(nn.Module):
 
         # adapt features number
         self.__wanted_n_features = n_features
-        self.__n_features = (
-            n_features
-            if n_features + 1 <= node_list.size(0)
-            else node_list.size(0) - 1
+        self.__n_features = min(
+            int(uniform(2, self.__wanted_n_features)), node_list.size(0) - 1
         )
 
         # Z : used for features and label
