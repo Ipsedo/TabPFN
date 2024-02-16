@@ -5,10 +5,10 @@ from os.path import exists, isdir, join
 import mlflow
 import torch as th
 from torch.nn import functional as F
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
 from tqdm import tqdm
 
 from .metrics import ConfusionMeter, LossMeter
+from .networks import get_cosine_schedule_with_warmup
 from .options import ModelOptions, TrainOptions
 
 
@@ -34,11 +34,11 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             tab_pfn.parameters(), lr=train_options.learning_rate
         )
 
-        scheduler = CosineAnnealingWarmRestarts(
+        scheduler = get_cosine_schedule_with_warmup(
             optim,
             train_options.warmup_steps,
-            T_mult=train_options.warmup_steps_mult,
-            eta_min=train_options.warmup_min_lr,
+            train_options.steps,
+            train_options.warmup_min_lr,
         )
 
         mlflow.log_params(

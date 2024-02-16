@@ -42,7 +42,6 @@ class TrainOptions(NamedTuple):
     save_every: int
     metric_window_size: int
     warmup_steps: int
-    warmup_steps_mult: int
     warmup_min_lr: float
     output_folder: str
 
