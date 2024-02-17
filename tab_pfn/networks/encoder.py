@@ -12,8 +12,8 @@ def _init_encoder(module: nn.Module) -> None:
         if module.bias is not None:
             nn.init.normal_(module.bias)
 
-    elif isinstance(module, nn.BatchNorm1d):
-        if module.affine:
+    elif isinstance(module, nn.LayerNorm):
+        if module.elementwise_affine:
             nn.init.constant_(module.weight, 1.0)
             nn.init.constant_(module.bias, 0.0)
 
@@ -35,15 +35,15 @@ class DataEncoder(nn.Sequential):
         super().__init__(
             nn.Linear(x_max_dim, hidden_dim),
             nn.Mish(),
-            _SeqWrapper(nn.BatchNorm1d(hidden_dim)),
+            nn.LayerNorm(hidden_dim),
             nn.Dropout(0.1),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Mish(),
-            _SeqWrapper(nn.BatchNorm1d(hidden_dim)),
+            nn.LayerNorm(hidden_dim),
             nn.Dropout(0.1),
             nn.Linear(hidden_dim, output_dim),
             nn.Mish(),
-            _SeqWrapper(nn.BatchNorm1d(output_dim)),
+            nn.LayerNorm(output_dim),
             nn.Dropout(0.1),
         )
 
