@@ -61,7 +61,7 @@ class DataAndLabelEncoder(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim, max_norm=1.0)
+        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim)
         self.__encoder = DataEncoder(
             x_max_dim + y_emb_dim, hidden_dim, output_dim
         )
