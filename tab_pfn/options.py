@@ -29,6 +29,7 @@ class ModelOptions(NamedTuple):
         return SCM(
             self.max_features,
             (2, self.max_class),
+            True,
         )
 
     def to_dict(self) -> Dict[str, Any]:
