@@ -20,6 +20,7 @@ class SCM(nn.Module):
         self,
         n_features: int,
         class_bounds: Tuple[int, int],
+        shuffle_class: bool = True,
     ) -> None:
         super().__init__()
 
@@ -54,6 +55,7 @@ class SCM(nn.Module):
         self.__max_nb_class = class_bounds[1]
         self.__nb_class = randint(class_bounds[0], class_bounds[1])
         self.__zy_rand_perm = th.randperm(self.__max_nb_class)
+        self.__shuffle_class = shuffle_class
 
         # E : set from which we drop neurons
         e_node_list = node_list[self.__n_features + 1 :]
@@ -154,10 +156,11 @@ class SCM(nn.Module):
         for interval in self.__y_class_intervals:
             indices += y_scalar > interval
 
-        permutations = th.arange(
-            0, self.__max_nb_class, device=y_scalar.device
-        )[self.__zy_rand_perm]
+        if self.__shuffle_class:
+            permutations = th.arange(
+                0, self.__max_nb_class, device=y_scalar.device
+            )[self.__zy_rand_perm]
 
-        indices = permutations[indices]
+            indices = permutations[indices]
 
         return indices

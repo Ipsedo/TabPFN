@@ -8,7 +8,7 @@ import torch as th
 from torch.nn import functional as F
 from tqdm import tqdm
 
-from .metrics import ConfusionMeter, LossMeter
+from .metrics import AccuracyMeter, ConfusionMeter, LossMeter
 from .networks import get_cosine_schedule_with_warmup
 from .options import ModelOptions, TrainOptions
 
@@ -53,6 +53,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         confusion_meter = ConfusionMeter(
             model_options.max_class, train_options.metric_window_size
         )
+        accuracy_meter = AccuracyMeter(train_options.metric_window_size)
 
         tqdm_bar = tqdm(range(train_options.steps))
 
@@ -91,9 +92,11 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
 
             loss_meter.add(loss.item())
             confusion_meter.add(out.flatten(0, 1), y_test.flatten(0, 1))
+            accuracy_meter.add(out.flatten(0, 1), y_test.flatten(0, 1))
 
             precision = confusion_meter.precision().mean().item()
             recall = confusion_meter.recall().mean().item()
+            accuracy = accuracy_meter.accuracy()
 
             grad_norm = tab_pfn.grad_norm()
 
@@ -102,6 +105,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                 f"precision = {precision:.4f}, "
                 f"recall = {recall:.4f}, "
                 f"grad_norm = {grad_norm:.4f}, "
+                f"accuracy = {accuracy:.4f}, "
                 f"lr = {optim.param_groups[0]['lr']:.10f}"
             )
 
@@ -111,6 +115,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     "recall": recall,
                     "precision": precision,
                     "grad_norm": grad_norm,
+                    "accuracy": accuracy,
                     "lr": optim.param_groups[0]["lr"],
                 },
                 step=s,
