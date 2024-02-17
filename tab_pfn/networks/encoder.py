@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from typing import Callable
 
 import torch as th
 from torch import nn
@@ -18,16 +17,6 @@ def _init_encoder(module: nn.Module) -> None:
             nn.init.constant_(module.bias, 0.0)
 
 
-class _SeqWrapper(nn.Module):
-    def __init__(self, module: Callable[[th.Tensor], th.Tensor]) -> None:
-        super().__init__()
-        self.__module = module
-
-    def forward(self, x: th.Tensor) -> th.Tensor:
-        b, l, c = x.size()
-        return self.__module(x.view(-1, c)).view(b, l, -1)
-
-
 class DataEncoder(nn.Sequential):
     def __init__(
         self, x_max_dim: int, hidden_dim: int, output_dim: int
@@ -36,15 +25,12 @@ class DataEncoder(nn.Sequential):
             nn.Linear(x_max_dim, hidden_dim),
             nn.Mish(),
             nn.LayerNorm(hidden_dim),
-            nn.Dropout(0.1),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Mish(),
             nn.LayerNorm(hidden_dim),
-            nn.Dropout(0.1),
             nn.Linear(hidden_dim, output_dim),
             nn.Mish(),
             nn.LayerNorm(output_dim),
-            nn.Dropout(0.1),
         )
 
         self.apply(_init_encoder)
