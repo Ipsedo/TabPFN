@@ -110,9 +110,10 @@ class SCM(nn.Module):
         outs = []
 
         for layer, act, mask in zip(self.__mlp, self.__act, self._mask):
-            out = layer(out) + distribution.sample(epsilon_size)
-            out = act(out)
-            out = out * mask[None, :]
+            out = (
+                act(layer(out) + distribution.sample(epsilon_size))
+                * mask[None, :]
+            )
             outs.append(out)
 
         # stack layers output
@@ -138,8 +139,9 @@ class SCM(nn.Module):
         )
 
     def __pad_shuffle_features(self, x_to_pad: th.Tensor) -> th.Tensor:
-        padded_features = pad_features(x_to_pad, self.__wanted_n_features)
-        return padded_features[:, self.__zx_rand_perm]
+        return pad_features(x_to_pad, self.__wanted_n_features)[
+            :, self.__zx_rand_perm
+        ]
 
     @property
     def nb_class(self) -> int:
@@ -152,9 +154,10 @@ class SCM(nn.Module):
         for interval in self.__y_class_intervals:
             indices += y_scalar > interval
 
-        permutation = th.arange(0, self.__max_nb_class, device=y_scalar.device)
-        permutation = permutation[self.__zy_rand_perm]
+        permutations = th.arange(
+            0, self.__max_nb_class, device=y_scalar.device
+        )[self.__zy_rand_perm]
 
-        indices = permutation[indices]
+        indices = permutations[indices]
 
         return indices

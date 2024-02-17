@@ -27,6 +27,7 @@ class PPD(nn.Module):
                 hidden_dim,
                 activation=F.mish,
                 batch_first=True,
+                dropout=0.1,
             ),
             num_layers,
             enable_nested_tensor=False,

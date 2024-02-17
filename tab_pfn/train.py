@@ -39,7 +39,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             optim,
             train_options.warmup_steps,
             train_options.steps,
-            train_options.warmup_min_lr,
+            train_options.cosine_min_lr,
         )
 
         mlflow.log_params(
@@ -69,7 +69,12 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             y = th.stack(y_batch, dim=0).to(device)
 
             # train_index = int(train_options.data_ratio * train_options.n_data)
-            train_index = int(uniform(0.25, 0.75) * train_options.n_data)
+            train_index = int(
+                uniform(
+                    train_options.data_ratios[0], train_options.data_ratios[1]
+                )
+                * train_options.n_data
+            )
 
             x_train, y_train = x[:, :train_index], y[:, :train_index]
             x_test, y_test = x[:, train_index:], y[:, train_index:]
@@ -90,11 +95,13 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             precision = confusion_meter.precision().mean().item()
             recall = confusion_meter.recall().mean().item()
 
+            grad_norm = tab_pfn.grad_norm()
+
             tqdm_bar.set_description(
                 f"loss = {loss_meter.loss():.4f}, "
                 f"precision = {precision:.4f}, "
                 f"recall = {recall:.4f}, "
-                f"grad_norm = {tab_pfn.grad_norm():.4f}, "
+                f"grad_norm = {grad_norm:.4f}, "
                 f"lr = {optim.param_groups[0]['lr']:.8f}"
             )
 
@@ -103,6 +110,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     "loss": loss.item(),
                     "recall": recall,
                     "precision": precision,
+                    "grad_norm": grad_norm,
                 },
                 step=s,
             )

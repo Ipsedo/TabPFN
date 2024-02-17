@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import NamedTuple
+from typing import NamedTuple, Tuple
 
 from .networks import SCM, TabPFN
 
@@ -38,11 +38,11 @@ class TrainOptions(NamedTuple):
     steps: int
     batch_size: int
     n_data: int
-    data_ratio: float
+    data_ratios: Tuple[float, float]
     save_every: int
     metric_window_size: int
     warmup_steps: int
-    warmup_min_lr: float
+    cosine_min_lr: float
     output_folder: str
 
 

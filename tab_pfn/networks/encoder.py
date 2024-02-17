@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Callable
 
 import torch as th
 from torch import nn
@@ -6,10 +7,10 @@ from torch import nn
 
 def _init_encoder(module: nn.Module) -> None:
     if isinstance(module, nn.Linear):
-        nn.init.xavier_normal_(module.weight, gain=1e-1)
+        nn.init.xavier_normal_(module.weight)
 
         if module.bias is not None:
-            nn.init.normal_(module.bias, std=1e-1)
+            nn.init.normal_(module.bias)
 
     elif isinstance(module, nn.BatchNorm1d):
         if module.affine:
@@ -18,14 +19,13 @@ def _init_encoder(module: nn.Module) -> None:
 
 
 class _SeqWrapper(nn.Module):
-    def __init__(self, module: nn.Module) -> None:
+    def __init__(self, module: Callable[[th.Tensor], th.Tensor]) -> None:
         super().__init__()
         self.__module = module
 
     def forward(self, x: th.Tensor) -> th.Tensor:
         b, l, c = x.size()
-        out: th.Tensor = self.__module(x.view(-1, c)).view(b, l, -1)
-        return out
+        return self.__module(x.view(-1, c)).view(b, l, -1)
 
 
 class DataEncoder(nn.Sequential):
@@ -36,12 +36,15 @@ class DataEncoder(nn.Sequential):
             nn.Linear(x_max_dim, hidden_dim),
             nn.Mish(),
             _SeqWrapper(nn.BatchNorm1d(hidden_dim)),
+            nn.Dropout(0.1),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Mish(),
             _SeqWrapper(nn.BatchNorm1d(hidden_dim)),
+            nn.Dropout(0.1),
             nn.Linear(hidden_dim, output_dim),
             nn.Mish(),
             _SeqWrapper(nn.BatchNorm1d(output_dim)),
+            nn.Dropout(0.1),
         )
 
         self.apply(_init_encoder)
@@ -58,7 +61,7 @@ class DataAndLabelEncoder(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim)
+        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim, max_norm=1.0)
         self.__encoder = DataEncoder(
             x_max_dim + y_emb_dim, hidden_dim, output_dim
         )

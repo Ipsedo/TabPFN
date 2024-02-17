@@ -23,13 +23,15 @@ def main() -> None:
     train_parser = sub_parser.add_parser("train")
     train_parser.add_argument("run_name", type=str)
     train_parser.add_argument("output_folder", type=str)
-    train_parser.add_argument("--learning-rate", type=float, default=1e-4)
+    train_parser.add_argument("--learning-rate", type=float, default=1e-5)
     train_parser.add_argument("--steps", type=int, default=2**17)
     train_parser.add_argument("--batch-size", type=int, default=14)
     train_parser.add_argument("--data", type=int, default=2**10)
-    train_parser.add_argument("--data-ratio", type=float, default=0.5)
+    train_parser.add_argument(
+        "--data-ratios", type=float, nargs=2, default=(0.5, 0.75)
+    )
     train_parser.add_argument("--warmup-steps", type=int, default=2**13)
-    train_parser.add_argument("--warmup-min-lr", type=float, default=1e-7)
+    train_parser.add_argument("--cosine-min-lr", type=float, default=1e-7)
     train_parser.add_argument("--save-every", type=int, default=1024)
     train_parser.add_argument("--metric-window-size", type=int, default=64)
 
@@ -57,11 +59,11 @@ def main() -> None:
             args.steps,
             args.batch_size,
             args.data,
-            args.data_ratio,
+            args.data_ratios,
             args.save_every,
             args.metric_window_size,
             args.warmup_steps,
-            args.warmup_min_lr,
+            args.cosine_min_lr,
             args.output_folder,
         )
 
