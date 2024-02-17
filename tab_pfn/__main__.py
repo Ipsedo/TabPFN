@@ -30,7 +30,7 @@ def main() -> None:
     train_parser.add_argument(
         "--data-ratios", type=float, nargs=2, default=(0.5, 0.75)
     )
-    train_parser.add_argument("--warmup-steps", type=int, default=2**13)
+    train_parser.add_argument("--warmup-steps", type=int, default=2**14)
     train_parser.add_argument("--cosine-min-lr", type=float, default=1e-7)
     train_parser.add_argument("--save-every", type=int, default=1024)
     train_parser.add_argument("--metric-window-size", type=int, default=64)

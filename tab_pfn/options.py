@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import NamedTuple, Tuple
+from typing import Any, Dict, NamedTuple, Tuple
 
 from .networks import SCM, TabPFN
 
@@ -31,6 +31,9 @@ class ModelOptions(NamedTuple):
             (2, self.max_class),
         )
 
+    def to_dict(self) -> Dict[str, Any]:
+        return dict(self._asdict())
+
 
 class TrainOptions(NamedTuple):
     run_name: str
@@ -45,7 +48,13 @@ class TrainOptions(NamedTuple):
     cosine_min_lr: float
     output_folder: str
 
+    def to_dict(self) -> Dict[str, Any]:
+        return dict(self._asdict())
+
 
 class InferOptions(NamedTuple):
     csv_path: str
     state_dict: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return dict(self._asdict())
