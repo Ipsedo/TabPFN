@@ -16,6 +16,7 @@ class CsvDataset(Dataset):
         columns: Optional[List[str]] = None,
         target_column: Optional[str] = None,
         dtypes: Optional[Dict[str, Type]] = None,
+        shuffle: Optional[bool] = True,
     ):
         super().__init__()
 
@@ -23,14 +24,15 @@ class CsvDataset(Dataset):
             csv_path, sep=sep, header=header, dtype=dtypes, encoding=encoding
         )
 
+        if shuffle:
+            self.__df = self.__df.iloc[th.randperm(len(self.__df))]
+
         assert target_column in self.__df.columns
         self.__target_columns = target_column
 
         self.__class_to_idx = {
             c: i
-            for i, c in enumerate(
-                sorted(self.__df[self.__target_columns].unique())
-            )
+            for i, c in enumerate(self.__df[self.__target_columns].unique())
         }
 
         if columns is None:

@@ -41,16 +41,11 @@ def infer(model_options: ModelOptions, infer_options: InferOptions) -> None:
 
     acc_meter = AccuracyMeter(None)
 
-    # mean_x = x_train.mean(dim=[0, 1])
-    # std_x = x_train.std(dim=[0, 1])
-    # x_train = (x_train - mean_x) / std_x
-
     for x, y in tqdm(data_loader):
 
         x = pad_features(x.to(device), model_options.max_features)[
             None, :, features_randperm
         ]
-        # x = (x - mean_x) / std_x
         y = y.to(device)
 
         with th.no_grad():
