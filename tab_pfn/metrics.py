@@ -55,7 +55,7 @@ class ConfusionMeter(Meter[th.Tensor, Tuple[th.Tensor, th.Tensor]]):
     def _process_value(self, *args: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
         y_proba = args[0]
         y_true = args[1]
-        return y_proba.argmax(dim=1), y_true
+        return y_proba.argmax(dim=-1), y_true
 
     def conf_mat(self) -> th.Tensor:
         y_pred = th.cat([y_p for y_p, _ in self._results], dim=0)
@@ -126,10 +126,10 @@ class AccuracyMeter(Meter[th.Tensor, Tuple[th.Tensor, th.Tensor]]):
     def _process_value(self, *args: th.Tensor) -> Tuple[th.Tensor, th.Tensor]:
         y_proba = args[0]
         y_true = args[1]
-        return y_proba.argmax(dim=1), y_true
+        return y_proba.argmax(dim=-1), y_true
 
     def accuracy(self) -> float:
         y_pred = th.cat([y_p for y_p, _ in self._results], dim=0)
         y_true = th.cat([y_t for _, y_t in self._results], dim=0)
 
-        return float((y_pred == y_true).sum().item() / y_true.size(0))
+        return float((y_pred == y_true).sum().item() / y_true.view(-1).size(0))

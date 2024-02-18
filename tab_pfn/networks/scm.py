@@ -149,6 +149,19 @@ class SCM(nn.Module):
     def nb_class(self) -> int:
         return self.__nb_class
 
+    def get_class_index(self) -> th.Tensor:
+        return self.__zy_rand_perm[
+            th.arange(0, self.__max_nb_class)[: self.__nb_class]
+        ]
+
+    def inverse_class_permutations(self) -> th.Tensor:
+        permutations = th.arange(
+            0,
+            self.__max_nb_class,
+            device="cuda" if next(self.parameters()).is_cuda else "cpu",
+        )[self.__zy_rand_perm]
+        return th.argsort(permutations)
+
     def __scalar_to_shuffled_class(self, y_scalar: th.Tensor) -> th.Tensor:
         indices = th.zeros_like(
             y_scalar, dtype=th.long, device=y_scalar.device
