@@ -30,7 +30,7 @@ def main() -> None:
     train_parser.add_argument(
         "--data-ratios", type=float, nargs=2, default=(0.5, 0.75)
     )
-    train_parser.add_argument("--warmup-steps", type=int, default=2**14)
+    train_parser.add_argument("--warmup-steps", type=int, default=2**15)
     train_parser.add_argument("--cosine-min-lr", type=float, default=1e-7)
     train_parser.add_argument("--save-every", type=int, default=1024)
     train_parser.add_argument("--metric-window-size", type=int, default=64)
@@ -38,6 +38,9 @@ def main() -> None:
     infer_parser = sub_parser.add_parser("infer")
     infer_parser.add_argument("csv_path", type=str)
     infer_parser.add_argument("state_dict", type=str)
+    infer_parser.add_argument("--class-col", type=str, required=True)
+    infer_parser.add_argument("--csv-sep", type=str, default=",")
+    infer_parser.add_argument("--train-ratio", type=float, default=0.5)
 
     args = parser.parse_args()
 
@@ -71,6 +74,9 @@ def main() -> None:
     elif args.mode == "infer":
         infer_options = InferOptions(
             args.csv_path,
+            args.class_col,
+            args.csv_sep,
+            args.train_ratio,
             args.state_dict,
         )
 

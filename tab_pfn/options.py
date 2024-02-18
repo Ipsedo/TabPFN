@@ -55,6 +55,9 @@ class TrainOptions(NamedTuple):
 
 class InferOptions(NamedTuple):
     csv_path: str
+    class_col: str
+    csv_sep: str
+    train_ratio: float
     state_dict: str
 
     def to_dict(self) -> Dict[str, Any]:

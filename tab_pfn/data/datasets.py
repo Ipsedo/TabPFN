@@ -26,6 +26,13 @@ class CsvDataset(Dataset):
         assert target_column in self.__df.columns
         self.__target_columns = target_column
 
+        self.__class_to_idx = {
+            c: i
+            for i, c in enumerate(
+                sorted(self.__df[self.__target_columns].unique())
+            )
+        }
+
         if columns is None:
             self.__columns = list(
                 set(self.__df.columns) - {self.__target_columns}
@@ -39,7 +46,9 @@ class CsvDataset(Dataset):
         return len(self.__df)
 
     def __getitem__(self, index: int) -> Tuple[th.Tensor, th.Tensor]:
-        x = th.tensor(self.__df[self.__columns].iloc[index, :])
-        y = th.tensor(self.__df[self.__target_columns][index])
+        x = th.tensor(self.__df[self.__columns].iloc[index, :].tolist())
+        y = th.tensor(
+            self.__class_to_idx[self.__df[self.__target_columns].iloc[index]]
+        )
 
         return x, y
