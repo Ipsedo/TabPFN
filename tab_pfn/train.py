@@ -2,6 +2,7 @@
 from os import mkdir
 from os.path import exists, isdir, join
 from random import uniform
+from typing import Tuple
 
 import mlflow
 import torch as th
@@ -11,6 +12,34 @@ from tqdm import tqdm
 from .metrics import AccuracyMeter, ConfusionMeter, LossMeter
 from .networks import get_cosine_schedule_with_warmup
 from .options import ModelOptions, TrainOptions
+
+
+def _generate_split_train_test(
+    model_options: ModelOptions,
+    datasets: int,
+    data: int,
+    train_ratio: float,
+    device: th.device,
+) -> Tuple[Tuple[th.Tensor, th.Tensor], Tuple[th.Tensor, th.Tensor]]:
+    x_list, y_list = zip(
+        *[model_options.get_scm()(data) for _ in range(datasets)]
+    )
+
+    x = th.stack(x_list, dim=0).to(device)
+    y = th.stack(y_list, dim=0).to(device)
+
+    train_nb = int(data * train_ratio)
+
+    x_train, y_train = (
+        x[:, :train_nb],
+        y[:, :train_nb],
+    )
+    x_test, y_test = (
+        x[:, train_nb:],
+        y[:, train_nb:],
+    )
+
+    return (x_train, y_train), (x_test, y_test)
 
 
 def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
@@ -62,51 +91,30 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
 
         tqdm_bar = tqdm(range(train_options.steps))
 
-        x_eval_list, y_eval_list = zip(
-            *[
-                model_options.get_scm()(train_options.eval_data)
-                for _ in range(train_options.eval_datasets)
-            ]
-        )
-
-        x_eval = th.stack(x_eval_list, dim=0).to(device)
-        y_eval = th.stack(y_eval_list, dim=0).to(device)
-
-        eval_train_nb = int(
-            train_options.eval_data * train_options.eval_train_ratio
-        )
-
-        x_eval_train, y_eval_train = (
-            x_eval[:, :eval_train_nb],
-            y_eval[:, :eval_train_nb],
-        )
-        x_eval_test, y_eval_test = (
-            x_eval[:, eval_train_nb:],
-            y_eval[:, eval_train_nb:],
+        (x_eval_train, y_eval_train,), (
+            x_eval_test,
+            y_eval_test,
+        ) = _generate_split_train_test(
+            model_options,
+            train_options.eval_datasets,
+            train_options.eval_data,
+            train_options.eval_train_ratio,
+            device,
         )
 
         for s in tqdm_bar:
 
-            x_batch, y_batch = zip(
-                *[
-                    model_options.get_scm()(train_options.n_data)
-                    for _ in range(train_options.batch_size)
-                ]
+            random_ratio = uniform(
+                train_options.data_ratios[0], train_options.data_ratios[1]
             )
 
-            x = th.stack(x_batch, dim=0).to(device)
-            y = th.stack(y_batch, dim=0).to(device)
-
-            # train_index = int(train_options.data_ratio * train_options.n_data)
-            train_index = int(
-                uniform(
-                    train_options.data_ratios[0], train_options.data_ratios[1]
-                )
-                * train_options.n_data
+            (x_train, y_train), (x_test, y_test) = _generate_split_train_test(
+                model_options,
+                train_options.batch_size,
+                train_options.n_data,
+                random_ratio,
+                device,
             )
-
-            x_train, y_train = x[:, :train_index], y[:, :train_index]
-            x_test, y_test = x[:, train_index:], y[:, train_index:]
 
             out = tab_pfn(x_train, y_train, x_test)
             loss = F.cross_entropy(
