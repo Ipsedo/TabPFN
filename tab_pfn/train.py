@@ -32,7 +32,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             tab_pfn.to(device)
 
         optim = th.optim.Adam(
-            tab_pfn.parameters(), lr=train_options.learning_rate
+            tab_pfn.parameters(),
+            lr=train_options.learning_rate,
         )
 
         scheduler = get_cosine_schedule_with_warmup(
@@ -55,7 +56,34 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         )
         accuracy_meter = AccuracyMeter(train_options.metric_window_size)
 
+        eval_loss_meter = LossMeter(1)
+        eval_confusion_meter = ConfusionMeter(model_options.max_class, 1)
+        eval_accuracy_meter = AccuracyMeter(1)
+
         tqdm_bar = tqdm(range(train_options.steps))
+
+        x_eval_list, y_eval_list = zip(
+            *[
+                model_options.get_scm()(train_options.eval_data)
+                for _ in range(train_options.eval_datasets)
+            ]
+        )
+
+        x_eval = th.stack(x_eval_list, dim=0).to(device)
+        y_eval = th.stack(y_eval_list, dim=0).to(device)
+
+        eval_train_nb = int(
+            train_options.eval_data * train_options.eval_train_ratio
+        )
+
+        x_eval_train, y_eval_train = (
+            x_eval[:, :eval_train_nb],
+            y_eval[:, :eval_train_nb],
+        )
+        x_eval_test, y_eval_test = (
+            x_eval[:, eval_train_nb:],
+            y_eval[:, eval_train_nb:],
+        )
 
         for s in tqdm_bar:
 
@@ -100,13 +128,47 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
 
             grad_norm = tab_pfn.grad_norm()
 
+            if s % train_options.eval_every == 0:
+                # eval
+                with th.no_grad():
+                    tab_pfn.eval()
+                    out_eval = tab_pfn(x_eval_train, y_eval_train, x_eval_test)
+                    eval_loss = F.cross_entropy(
+                        out_eval.permute(0, 2, 1),
+                        y_eval_test,
+                        reduction="mean",
+                    )
+
+                    out_eval = out_eval.flatten(0, 1)
+
+                    eval_loss_meter.add(eval_loss.item())
+                    eval_confusion_meter.add(
+                        out_eval, y_eval_test.flatten(0, 1)
+                    )
+                    eval_accuracy_meter.add(
+                        out_eval, y_eval_test.flatten(0, 1)
+                    )
+
+                    eval_precision = (
+                        eval_confusion_meter.precision().mean().item()
+                    )
+                    eval_recall = eval_confusion_meter.recall().mean().item()
+                    eval_accuracy = eval_accuracy_meter.accuracy()
+
+                    tab_pfn.train()
+
             tqdm_bar.set_description(
                 f"loss = {loss_meter.loss():.4f}, "
-                f"precision = {precision:.4f}, "
-                f"recall = {recall:.4f}, "
-                f"accuracy = {accuracy:.4f}, "
+                f"prec = {precision:.4f}, "
+                f"rec = {recall:.4f}, "
+                f"acc = {accuracy:.4f}, "
                 f"grad_norm = {grad_norm:.4f}, "
-                f"lr = {optim.param_groups[0]['lr']:.10f}"
+                f"lr = {optim.param_groups[0]['lr']:.3e} "
+                f"- [Eval : "
+                f"loss = {eval_loss_meter.loss():.3f}, "
+                f"prec = {eval_precision:.3f}, "
+                f"rec = {eval_recall:.3f}, "
+                f"acc = {eval_accuracy:.3f}] "
             )
 
             mlflow.log_metrics(
@@ -114,9 +176,13 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                     "loss": loss.item(),
                     "recall": recall,
                     "precision": precision,
-                    "grad_norm": grad_norm,
                     "accuracy": accuracy,
+                    "grad_norm": grad_norm,
                     "lr": optim.param_groups[0]["lr"],
+                    "eval_loss": eval_loss.item(),
+                    "eval_recall": eval_recall,
+                    "eval_precision": eval_precision,
+                    "eval_accuracy": eval_accuracy,
                 },
                 step=s,
             )

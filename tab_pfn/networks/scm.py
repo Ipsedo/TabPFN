@@ -95,10 +95,7 @@ class SCM(nn.Module):
         # cov_mat = cov_mat @ cov_mat.t()
 
         self.register_buffer("_sigma", tnlu((hidden_size,), 1e-4, 0.3, 1e-8))
-        self.register_buffer(
-            "_loc",
-            th.randn(hidden_size) * tnlu((hidden_size,), 1e-4, 0.3, 1e-8),
-        )
+        self.register_buffer("_loc", th.randn(hidden_size))
 
         self.apply(_init_scm)
 

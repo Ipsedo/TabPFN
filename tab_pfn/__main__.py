@@ -31,7 +31,11 @@ def main() -> None:
         "--data-ratios", type=float, nargs=2, default=(0.5, 0.75)
     )
     train_parser.add_argument("--warmup-steps", type=int, default=2**15)
-    train_parser.add_argument("--cosine-min-lr", type=float, default=1e-7)
+    train_parser.add_argument("--cosine-min-lr", type=float, default=1e-8)
+    train_parser.add_argument("--eval-datasets", type=int, default=128)
+    train_parser.add_argument("--eval-data", type=int, default=2**10)
+    train_parser.add_argument("--eval-train-ratio", type=float, default=0.75)
+    train_parser.add_argument("--eval-every", type=int, default=128)
     train_parser.add_argument("--save-every", type=int, default=1024)
     train_parser.add_argument("--metric-window-size", type=int, default=64)
 
@@ -67,6 +71,10 @@ def main() -> None:
             args.metric_window_size,
             args.warmup_steps,
             args.cosine_min_lr,
+            args.eval_datasets,
+            args.eval_data,
+            args.eval_train_ratio,
+            args.eval_every,
             args.output_folder,
         )
 
