@@ -91,16 +91,15 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
 
         tqdm_bar = tqdm(range(train_options.steps))
 
-        (x_eval_train, y_eval_train,), (
-            x_eval_test,
-            y_eval_test,
-        ) = _generate_split_train_test(
+        eval_train, eval_test = _generate_split_train_test(
             model_options,
             train_options.eval_datasets,
             train_options.eval_data,
             train_options.eval_train_ratio,
             device,
         )
+        x_eval_train, y_eval_train = eval_train
+        x_eval_test, y_eval_test = eval_test
 
         for s in tqdm_bar:
 
