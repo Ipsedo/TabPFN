@@ -104,8 +104,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                 f"loss = {loss_meter.loss():.4f}, "
                 f"precision = {precision:.4f}, "
                 f"recall = {recall:.4f}, "
-                f"grad_norm = {grad_norm:.4f}, "
                 f"accuracy = {accuracy:.4f}, "
+                f"grad_norm = {grad_norm:.4f}, "
                 f"lr = {optim.param_groups[0]['lr']:.10f}"
             )
 
