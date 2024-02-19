@@ -94,23 +94,41 @@ class SCM(nn.Module):
         # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         # cov_mat = cov_mat @ cov_mat.t()
 
-        self.register_buffer("_sigma", tnlu((hidden_size,), 1e-4, 0.3, 1e-8))
-        self.register_buffer("_loc", th.randn(hidden_size))
+        self.register_buffer(
+            "_noise_sigma",
+            tnlu(
+                (
+                    n_layer,
+                    hidden_size,
+                ),
+                1e-4,
+                0.3,
+                1e-8,
+            ),
+        )
+        self.register_buffer("_noise_mean", th.zeros(n_layer, hidden_size))
+
+        self.register_buffer("_cause_sigma", th.abs(th.randn(hidden_size)))
+        self.register_buffer("_cause_mean", th.randn(hidden_size))
 
         self.apply(_init_scm)
 
     @th.no_grad()
     def forward(self, batch_size: int) -> Tuple[th.Tensor, th.Tensor]:
-        distribution = Normal(self._loc, self._sigma)
-
         epsilon_size = th.Size([batch_size])
 
-        out = distribution.sample(epsilon_size)
+        out = Normal(self._cause_mean, self._cause_sigma).sample(epsilon_size)
         outs = []
 
-        for layer, act, mask in zip(self.__mlp, self.__act, self._mask):
+        for layer, act, mask, loc, sig in zip(
+            self.__mlp,
+            self.__act,
+            self._mask,
+            self._noise_mean,
+            self._noise_sigma,
+        ):
             out = (
-                act(layer(out) + distribution.sample(epsilon_size))
+                act(layer(out) + Normal(loc, sig).sample(epsilon_size))
                 * mask[None, :]
             )
             outs.append(out)

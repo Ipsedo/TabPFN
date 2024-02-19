@@ -48,7 +48,9 @@ class CsvDataset(Dataset):
         return len(self.__df)
 
     def __getitem__(self, index: int) -> Tuple[th.Tensor, th.Tensor]:
-        x = th.tensor(self.__df[self.__columns].iloc[index, :].tolist())
+        x = th.tensor(
+            self.__df[self.__columns].iloc[index, :].fillna(0.0).tolist()
+        )
         y = th.tensor(
             self.__class_to_idx[self.__df[self.__target_columns].iloc[index]]
         )
