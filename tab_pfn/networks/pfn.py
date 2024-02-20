@@ -94,6 +94,11 @@ class TabPFN(nn.Module):
     def forward(
         self, x_train: th.Tensor, y_train: th.Tensor, x_test: th.Tensor
     ) -> th.Tensor:
+        x_mean = x_train.mean(dim=1, keepdim=True)
+        x_std = x_train.std(dim=1, keepdim=True) + 1e-5
+
+        x_train = (x_train - x_mean) / x_std
+        x_test = (x_test - x_mean) / x_std
 
         train_enc = self.__data_lbl_enc(x_train, y_train)
         test_enc = self.__data_enc(x_test)

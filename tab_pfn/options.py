@@ -29,6 +29,7 @@ class ModelOptions(NamedTuple):
         return SCM(
             self.max_features,
             (2, self.max_class),
+            True,
         )
 
     def to_dict(self) -> Dict[str, Any]:
@@ -46,6 +47,10 @@ class TrainOptions(NamedTuple):
     metric_window_size: int
     warmup_steps: int
     cosine_min_lr: float
+    eval_datasets: int
+    eval_data: int
+    eval_train_ratio: float
+    eval_every: int
     output_folder: str
 
     def to_dict(self) -> Dict[str, Any]:
@@ -54,7 +59,11 @@ class TrainOptions(NamedTuple):
 
 class InferOptions(NamedTuple):
     csv_path: str
+    class_col: str
+    csv_sep: str
+    train_ratio: float
     state_dict: str
+    output_folder: str
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self._asdict())

@@ -16,6 +16,7 @@ class CsvDataset(Dataset):
         columns: Optional[List[str]] = None,
         target_column: Optional[str] = None,
         dtypes: Optional[Dict[str, Type]] = None,
+        shuffle: Optional[bool] = True,
     ):
         super().__init__()
 
@@ -23,8 +24,16 @@ class CsvDataset(Dataset):
             csv_path, sep=sep, header=header, dtype=dtypes, encoding=encoding
         )
 
+        if shuffle:
+            self.__df = self.__df.iloc[th.randperm(len(self.__df))]
+
         assert target_column in self.__df.columns
         self.__target_columns = target_column
+
+        self.__class_to_idx = {
+            c: i
+            for i, c in enumerate(self.__df[self.__target_columns].unique())
+        }
 
         if columns is None:
             self.__columns = list(
@@ -39,7 +48,15 @@ class CsvDataset(Dataset):
         return len(self.__df)
 
     def __getitem__(self, index: int) -> Tuple[th.Tensor, th.Tensor]:
-        x = th.tensor(self.__df[self.__columns].iloc[index, :])
-        y = th.tensor(self.__df[self.__target_columns][index])
+        x = th.tensor(
+            self.__df[self.__columns].iloc[index, :].fillna(0.0).tolist()
+        )
+        y = th.tensor(
+            self.__class_to_idx[self.__df[self.__target_columns].iloc[index]]
+        )
 
         return x, y
+
+    @property
+    def nb_classes(self) -> int:
+        return len(self.__class_to_idx)

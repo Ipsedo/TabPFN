@@ -132,4 +132,5 @@ dmypy.json
 .idea/
 
 out/
+out_2/
 mlruns/

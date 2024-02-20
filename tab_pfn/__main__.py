@@ -23,21 +23,29 @@ def main() -> None:
     train_parser = sub_parser.add_parser("train")
     train_parser.add_argument("run_name", type=str)
     train_parser.add_argument("output_folder", type=str)
-    train_parser.add_argument("--learning-rate", type=float, default=1e-5)
+    train_parser.add_argument("--learning-rate", type=float, default=1e-4)
     train_parser.add_argument("--steps", type=int, default=2**17)
     train_parser.add_argument("--batch-size", type=int, default=14)
     train_parser.add_argument("--data", type=int, default=2**10)
     train_parser.add_argument(
         "--data-ratios", type=float, nargs=2, default=(0.5, 0.75)
     )
-    train_parser.add_argument("--warmup-steps", type=int, default=2**14)
+    train_parser.add_argument("--warmup-steps", type=int, default=2**15)
     train_parser.add_argument("--cosine-min-lr", type=float, default=1e-7)
+    train_parser.add_argument("--eval-datasets", type=int, default=128)
+    train_parser.add_argument("--eval-data", type=int, default=2**10)
+    train_parser.add_argument("--eval-train-ratio", type=float, default=0.75)
+    train_parser.add_argument("--eval-every", type=int, default=128)
     train_parser.add_argument("--save-every", type=int, default=1024)
     train_parser.add_argument("--metric-window-size", type=int, default=64)
 
     infer_parser = sub_parser.add_parser("infer")
     infer_parser.add_argument("csv_path", type=str)
     infer_parser.add_argument("state_dict", type=str)
+    infer_parser.add_argument("output_folder", type=str)
+    infer_parser.add_argument("--class-col", type=str, required=True)
+    infer_parser.add_argument("--csv-sep", type=str, default=",")
+    infer_parser.add_argument("--train-ratio", type=float, default=0.5)
 
     args = parser.parse_args()
 
@@ -64,6 +72,10 @@ def main() -> None:
             args.metric_window_size,
             args.warmup_steps,
             args.cosine_min_lr,
+            args.eval_datasets,
+            args.eval_data,
+            args.eval_train_ratio,
+            args.eval_every,
             args.output_folder,
         )
 
@@ -71,7 +83,11 @@ def main() -> None:
     elif args.mode == "infer":
         infer_options = InferOptions(
             args.csv_path,
+            args.class_col,
+            args.csv_sep,
+            args.train_ratio,
             args.state_dict,
+            args.output_folder,
         )
 
         infer(model_options, infer_options)

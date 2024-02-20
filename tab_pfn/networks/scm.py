@@ -20,6 +20,7 @@ class SCM(nn.Module):
         self,
         n_features: int,
         class_bounds: Tuple[int, int],
+        shuffle_class: bool = True,
     ) -> None:
         super().__init__()
 
@@ -54,6 +55,7 @@ class SCM(nn.Module):
         self.__max_nb_class = class_bounds[1]
         self.__nb_class = randint(class_bounds[0], class_bounds[1])
         self.__zy_rand_perm = th.randperm(self.__max_nb_class)
+        self.__shuffle_class = shuffle_class
 
         # E : set from which we drop neurons
         e_node_list = node_list[self.__n_features + 1 :]
@@ -92,26 +94,44 @@ class SCM(nn.Module):
         # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         # cov_mat = cov_mat @ cov_mat.t()
 
-        self.register_buffer("_sigma", tnlu((hidden_size,), 1e-4, 0.3, 1e-8))
         self.register_buffer(
-            "_loc",
-            th.randn(hidden_size) * tnlu((hidden_size,), 1e-4, 0.3, 1e-8),
+            "_noise_sigma",
+            tnlu(
+                (
+                    n_layer,
+                    hidden_size,
+                ),
+                1e-4,
+                0.3,
+                1e-8,
+            )
+            + 1e-5,
         )
+        self.register_buffer("_noise_mean", th.zeros(n_layer, hidden_size))
+
+        self.register_buffer(
+            "_cause_sigma", th.abs(th.randn(hidden_size)) + 1e-5
+        )
+        self.register_buffer("_cause_mean", th.randn(hidden_size))
 
         self.apply(_init_scm)
 
     @th.no_grad()
     def forward(self, batch_size: int) -> Tuple[th.Tensor, th.Tensor]:
-        distribution = Normal(self._loc, self._sigma)
-
         epsilon_size = th.Size([batch_size])
 
-        out = distribution.sample(epsilon_size)
+        out = Normal(self._cause_mean, self._cause_sigma).sample(epsilon_size)
         outs = []
 
-        for layer, act, mask in zip(self.__mlp, self.__act, self._mask):
+        for layer, act, mask, loc, sig in zip(
+            self.__mlp,
+            self.__act,
+            self._mask,
+            self._noise_mean,
+            self._noise_sigma,
+        ):
             out = (
-                act(layer(out) + distribution.sample(epsilon_size))
+                act(layer(out) + Normal(loc, sig).sample(epsilon_size))
                 * mask[None, :]
             )
             outs.append(out)
@@ -147,6 +167,19 @@ class SCM(nn.Module):
     def nb_class(self) -> int:
         return self.__nb_class
 
+    def get_class_index(self) -> th.Tensor:
+        return self.__zy_rand_perm[
+            th.arange(0, self.__max_nb_class)[: self.__nb_class]
+        ]
+
+    def inverse_class_permutations(self) -> th.Tensor:
+        permutations = th.arange(
+            0,
+            self.__max_nb_class,
+            device="cuda" if next(self.parameters()).is_cuda else "cpu",
+        )[self.__zy_rand_perm]
+        return th.argsort(permutations)
+
     def __scalar_to_shuffled_class(self, y_scalar: th.Tensor) -> th.Tensor:
         indices = th.zeros_like(
             y_scalar, dtype=th.long, device=y_scalar.device
@@ -154,10 +187,11 @@ class SCM(nn.Module):
         for interval in self.__y_class_intervals:
             indices += y_scalar > interval
 
-        permutations = th.arange(
-            0, self.__max_nb_class, device=y_scalar.device
-        )[self.__zy_rand_perm]
+        if self.__shuffle_class:
+            permutations = th.arange(
+                0, self.__max_nb_class, device=y_scalar.device
+            )[self.__zy_rand_perm]
 
-        indices = permutations[indices]
+            indices = permutations[indices]
 
         return indices
