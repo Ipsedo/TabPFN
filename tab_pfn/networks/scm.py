@@ -104,11 +104,14 @@ class SCM(nn.Module):
                 1e-4,
                 0.3,
                 1e-8,
-            ),
+            )
+            + 1e-5,
         )
         self.register_buffer("_noise_mean", th.zeros(n_layer, hidden_size))
 
-        self.register_buffer("_cause_sigma", th.abs(th.randn(hidden_size)))
+        self.register_buffer(
+            "_cause_sigma", th.abs(th.randn(hidden_size)) + 1e-5
+        )
         self.register_buffer("_cause_mean", th.randn(hidden_size))
 
         self.apply(_init_scm)
