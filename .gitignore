@@ -133,4 +133,5 @@ dmypy.json
 
 out/
 out_2/
+out*/
 mlruns/
