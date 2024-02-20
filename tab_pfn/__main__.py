@@ -42,6 +42,7 @@ def main() -> None:
     infer_parser = sub_parser.add_parser("infer")
     infer_parser.add_argument("csv_path", type=str)
     infer_parser.add_argument("state_dict", type=str)
+    infer_parser.add_argument("output_folder", type=str)
     infer_parser.add_argument("--class-col", type=str, required=True)
     infer_parser.add_argument("--csv-sep", type=str, default=",")
     infer_parser.add_argument("--train-ratio", type=float, default=0.5)
@@ -86,6 +87,7 @@ def main() -> None:
             args.csv_sep,
             args.train_ratio,
             args.state_dict,
+            args.output_folder,
         )
 
         infer(model_options, infer_options)

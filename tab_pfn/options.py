@@ -63,6 +63,7 @@ class InferOptions(NamedTuple):
     csv_sep: str
     train_ratio: float
     state_dict: str
+    output_folder: str
 
     def to_dict(self) -> Dict[str, Any]:
         return dict(self._asdict())

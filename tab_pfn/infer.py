@@ -1,15 +1,23 @@
 # -*- coding: utf-8 -*-
+from os import mkdir
+from os.path import exists, isdir
+
 import torch as th
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from .data import CsvDataset
-from .metrics import AccuracyMeter
+from .metrics import AccuracyMeter, ConfusionMeter
 from .networks import pad_features
 from .options import InferOptions, ModelOptions
 
 
 def infer(model_options: ModelOptions, infer_options: InferOptions) -> None:
+    if not exists(infer_options.output_folder):
+        mkdir(infer_options.output_folder)
+    elif not isdir(infer_options.output_folder):
+        raise NotADirectoryError(infer_options.output_folder)
+
     print(f'Will infer from "{infer_options.csv_path}"')
 
     dataset = CsvDataset(
@@ -42,6 +50,7 @@ def infer(model_options: ModelOptions, infer_options: InferOptions) -> None:
     data_loader = DataLoader(test_dataset, batch_size=128)
 
     acc_meter = AccuracyMeter(None)
+    conf_meter = ConfusionMeter(dataset.nb_classes, None)
 
     for x, y in tqdm(data_loader):
 
@@ -53,5 +62,11 @@ def infer(model_options: ModelOptions, infer_options: InferOptions) -> None:
         with th.no_grad():
             out = tab_pfn(x_train, y_train, x)[0]
             acc_meter.add(out, y)
+            conf_meter.add(out, y)
 
     print(f"accuracy : {acc_meter.accuracy()}")
+    print(f"precisions = {conf_meter.precision().numpy().tolist()}")
+    print(f"recalls = {conf_meter.recall().numpy().tolist()}")
+    print(f"confusion_matrix :\n{conf_meter.conf_mat().numpy()}")
+
+    conf_meter.save_conf_matrix(-1, infer_options.output_folder)
