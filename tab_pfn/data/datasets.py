@@ -56,3 +56,7 @@ class CsvDataset(Dataset):
         )
 
         return x, y
+
+    @property
+    def nb_classes(self) -> int:
+        return len(self.__class_to_idx)

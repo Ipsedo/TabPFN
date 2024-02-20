@@ -10,6 +10,8 @@ from .options import InferOptions, ModelOptions
 
 
 def infer(model_options: ModelOptions, infer_options: InferOptions) -> None:
+    print(f'Will infer from "{infer_options.csv_path}"')
+
     dataset = CsvDataset(
         infer_options.csv_path,
         infer_options.csv_sep,
