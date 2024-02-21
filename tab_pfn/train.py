@@ -56,6 +56,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
         if model_options.cuda:
             device = th.device("cuda")
             tab_pfn.to(device)
+            th.backends.cudnn.benchmark = True
         else:
             device = th.device("cpu")
             tab_pfn.to(device)
