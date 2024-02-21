@@ -3,6 +3,7 @@ numpy
 tqdm
 mlflow
 pandas
+openml
 
 pre-commit
 mypy
