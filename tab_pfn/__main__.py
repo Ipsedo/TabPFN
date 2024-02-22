@@ -23,10 +23,10 @@ def main() -> None:
     train_parser = sub_parser.add_parser("train")
     train_parser.add_argument("run_name", type=str)
     train_parser.add_argument("output_folder", type=str)
-    train_parser.add_argument("--learning-rate", type=float, default=1e-4)
+    train_parser.add_argument("--learning-rate", type=float, default=2e-5)
     train_parser.add_argument("--steps", type=int, default=2**17)
-    train_parser.add_argument("--batch-size", type=int, default=14)
-    train_parser.add_argument("--data", type=int, default=2**10)
+    train_parser.add_argument("--batch-size", type=int, default=6)
+    train_parser.add_argument("--data", type=int, default=2**11)
     train_parser.add_argument(
         "--data-ratios", type=float, nargs=2, default=(0.5, 0.75)
     )

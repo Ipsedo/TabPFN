@@ -73,6 +73,8 @@ class TabPFN(nn.Module):
     ) -> None:
         super().__init__()
 
+        self.__max_features = max_features
+
         self.__data_lbl_enc = DataAndLabelEncoder(
             max_features,
             max_nb_class,
@@ -116,3 +118,7 @@ class TabPFN(nn.Module):
             for p in self.parameters()
             if p.grad is not None
         )
+
+    @property
+    def nb_features(self) -> int:
+        return self.__max_features
