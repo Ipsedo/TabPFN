@@ -20,41 +20,40 @@ class PPD(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.__trf = nn.TransformerEncoder(
-            nn.TransformerEncoderLayer(
-                model_dim,
-                nheads,
-                hidden_dim,
-                activation=F.mish,
-                batch_first=True,
-                dropout=0.0,
-            ),
+        self.__trf = nn.Transformer(
+            model_dim,
+            nheads,
             num_layers,
-            enable_nested_tensor=False,
+            num_layers,
+            hidden_dim,
+            dropout=0.0,
+            activation=F.gelu,
+            batch_first=True,
         )
 
+        self.__nheads = nheads
+
         self.__to_class = nn.Linear(model_dim, nb_class)
-
-    @staticmethod
-    def __get_mask(
-        x_train: th.Tensor, x_test: th.Tensor, device: str
-    ) -> th.Tensor:
-        mask = th.eye(x_train.size(1) + x_test.size(1), device=device)
-
-        mask[:, : x_train.size(1)] = 1
-
-        return mask
 
     def forward(self, x_train: th.Tensor, x_test: th.Tensor) -> th.Tensor:
         device = "cuda" if next(self.parameters()).is_cuda else "cpu"
 
-        src_mask = self.__get_mask(x_train, x_test, device)
+        src_mask = th.ones(
+            (
+                x_train.size(0) * self.__nheads,
+                x_train.size(1),
+                x_train.size(1),
+            ),
+            device=device,
+        )
+        tgt_mask = th.eye(x_test.size(1), device=device)[None].repeat(
+            x_test.size(0) * self.__nheads, 1, 1
+        )
 
-        enc_input = th.cat([x_train, x_test], dim=1)
+        out: th.Tensor = self.__trf(
+            x_train, x_test, src_mask=src_mask, tgt_mask=tgt_mask
+        )
 
-        out: th.Tensor = self.__trf(enc_input, mask=src_mask)[
-            :, x_train.size(1) :, :
-        ]
         out = self.__to_class(out)
 
         return out
