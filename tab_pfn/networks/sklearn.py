@@ -83,22 +83,29 @@ class _SklearnTabPFN(SklearnClassifier):
 
         assert len(x_test.size()) == 2
         assert x_test.size(1) == self.__model.nb_features
+
         with th.no_grad():
             out: th.Tensor = self.__model(
                 self.__x_train, self.__y_train, x_test[None]
             )[0]
-        print(out.size(), len(self.__class_to_idx))
+
         return out[:, : len(self.__class_to_idx)]
 
-    @staticmethod
-    def __tensor_to_input_type(out: th.Tensor, x_test: T) -> T:
+    def __tensor_to_input_type(self, out: th.Tensor, x_test: T) -> T:
         if isinstance(x_test, th.Tensor):
             return out
         if isinstance(x_test, np.ndarray):
             array: np.ndarray = out.cpu().numpy()
             return array
         if isinstance(x_test, pd.DataFrame):
-            return pd.DataFrame(out.cpu().numpy())
+            array = out.cpu().numpy()
+            if len(out.size()) > 1:
+                return pd.DataFrame(
+                    array, columns=list(self.__class_to_idx.keys())
+                )
+
+            pred_class = [self.__class_to_idx[c] for c in array]
+            return pd.DataFrame(pred_class, columns=["prediction"])
 
         raise TypeError(f"Unsupported input type: {type(x_test)}")
 
@@ -108,7 +115,7 @@ class _SklearnTabPFN(SklearnClassifier):
         if isinstance(x, np.ndarray):
             return self.__x_np_to_tensor(x)
         if isinstance(x, th.Tensor):
-            return x
+            return pad_features(x, self.__model.nb_features)
 
         raise TypeError(f"Unrecognized input type {type(x)}")
 
