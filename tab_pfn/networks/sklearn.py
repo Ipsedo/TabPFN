@@ -11,7 +11,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from .functions import pad_features
 from .pfn import TabPFN
 
-T = TypeVar("T", pd.DataFrame, pd.Series, np.ndarray, th.Tensor)
+T = TypeVar("T", pd.DataFrame, np.ndarray, th.Tensor)
 Ty = TypeVar("Ty", pd.Series, np.ndarray, th.Tensor)
 
 
@@ -87,6 +87,13 @@ class _SklearnTabPFN(SklearnClassifier):
 
         assert len(x_test.size()) == 2
         assert x_test.size(1) == self.__model.nb_features
+
+        assert (
+            self.__x_train is not None
+        ), "Call fit() before predict (x_train is None)"
+        assert (
+            self.__y_train is not None
+        ), "Call fit() before predict (y_train is None)"
 
         with th.no_grad():
             out: th.Tensor = self.__model(
