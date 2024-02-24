@@ -10,7 +10,6 @@ from torch.nn import functional as F
 from tqdm import tqdm
 
 from .metrics import AccuracyMeter, ConfusionMeter, LossMeter
-from .networks import get_cosine_schedule_with_warmup
 from .options import ModelOptions, TrainOptions
 
 
@@ -65,13 +64,6 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             tab_pfn.parameters(), lr=train_options.learning_rate
         )
 
-        lr_scheduler = get_cosine_schedule_with_warmup(
-            optim,
-            train_options.warmup_steps,
-            train_options.steps,
-            train_options.cosine_min_lr,
-        )
-
         mlflow.log_params(
             {
                 "model_options": model_options.to_dict(),
@@ -109,7 +101,6 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             optim.zero_grad(set_to_none=True)
             loss.backward()
             optim.step()
-            lr_scheduler.step()
 
             loss_meter.add(loss.item())
             confusion_meter.add(out.flatten(0, 1), y_test.flatten(0, 1))

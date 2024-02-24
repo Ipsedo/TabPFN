@@ -6,10 +6,10 @@ from torch import nn
 
 def _init_encoder(module: nn.Module) -> None:
     if isinstance(module, nn.Linear):
-        nn.init.xavier_normal_(module.weight)
+        nn.init.xavier_normal_(module.weight, gain=1e-3)
 
         if module.bias is not None:
-            nn.init.normal_(module.bias)
+            nn.init.normal_(module.bias, std=1e-3)
 
     elif isinstance(module, nn.LayerNorm):
         if module.elementwise_affine:
@@ -47,7 +47,7 @@ class DataAndLabelEncoder(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim)
+        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim, max_norm=1.0)
         self.__encoder = DataEncoder(
             x_max_dim + y_emb_dim, hidden_dim, output_dim
         )

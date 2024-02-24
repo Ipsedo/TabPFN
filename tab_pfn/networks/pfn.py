@@ -26,14 +26,17 @@ class PPD(nn.Module):
             num_layers,
             num_layers,
             hidden_dim,
-            dropout=0.0,
+            dropout=0.1,
             activation=F.gelu,
             batch_first=True,
         )
 
         self.__nheads = nheads
 
-        self.__to_class = nn.Linear(model_dim, nb_class)
+        self.__to_class = nn.Sequential(
+            nn.Linear(model_dim, nb_class),
+            nn.Softmax(dim=-1),
+        )
 
     def forward(self, x_train: th.Tensor, x_test: th.Tensor) -> th.Tensor:
         device = "cuda" if next(self.parameters()).is_cuda else "cpu"

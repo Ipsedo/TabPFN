@@ -25,7 +25,7 @@ class SCM(nn.Module):
         super().__init__()
 
         # setup MLP
-        n_layer: int = tnlu_int(2, 6, 2)
+        n_layer: int = tnlu_int(1, 6, 2)
         hidden_size: int = tnlu_int(5, 130, 4)
 
         self.__mlp = nn.ModuleList(
@@ -80,6 +80,7 @@ class SCM(nn.Module):
             F.tanh,
             F.leaky_relu,
             F.elu,
+            F.sigmoid,
             lambda t: t,  # identity
         ]
 
@@ -105,12 +106,12 @@ class SCM(nn.Module):
                 0.3,
                 1e-8,
             )
-            + 1e-5,
+            + 1e-8,
         )
         self.register_buffer("_noise_mean", th.zeros(n_layer, hidden_size))
 
         self.register_buffer(
-            "_cause_sigma", th.abs(th.randn(hidden_size)) + 1e-5
+            "_cause_sigma", th.abs(th.randn(hidden_size)) + 1e-8
         )
         self.register_buffer("_cause_mean", th.randn(hidden_size))
 
