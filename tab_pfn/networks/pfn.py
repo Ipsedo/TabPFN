@@ -126,7 +126,7 @@ class TabPFN(nn.Module):
         assert x_test.size(0) == x_train.size(0)
 
         x_mean = x_train.mean(dim=1, keepdim=True)
-        x_std = x_train.std(dim=1, keepdim=True) + 1e-5
+        x_std = x_train.std(dim=1, keepdim=True) + 1e-8
 
         x_train = (x_train - x_mean) / x_std
         x_test = (x_test - x_mean) / x_std
