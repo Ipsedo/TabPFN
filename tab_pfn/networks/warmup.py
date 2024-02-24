@@ -13,7 +13,9 @@ def get_cosine_schedule_with_warmup(
 ) -> LambdaLR:
     def lr_lambda(current_step: int) -> float:
         if current_step < num_warmup_steps:
-            return float(current_step) / float(max(1, num_warmup_steps))
+            return max(
+                float(current_step) / float(max(1, num_warmup_steps)), min_lr
+            )
         progress = float(current_step - num_warmup_steps) / float(
             max(1, num_training_steps - num_warmup_steps)
         )

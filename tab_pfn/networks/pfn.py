@@ -20,15 +20,34 @@ class PPD(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.__trf = nn.Transformer(
-            model_dim,
-            nheads,
+        dropout = 0.1
+        layer_norm_eps = 1e-8
+
+        self.__trf_enc = nn.TransformerEncoder(
+            nn.TransformerEncoderLayer(
+                model_dim,
+                nheads,
+                hidden_dim,
+                dropout=dropout,
+                activation=F.mish,
+                layer_norm_eps=layer_norm_eps,
+                batch_first=True,
+            ),
             num_layers,
+            enable_nested_tensor=False,
+        )
+
+        self.__trf_dec = nn.TransformerDecoder(
+            nn.TransformerDecoderLayer(
+                model_dim,
+                nheads,
+                hidden_dim,
+                dropout=dropout,
+                activation=F.mish,
+                layer_norm_eps=layer_norm_eps,
+                batch_first=True,
+            ),
             num_layers,
-            hidden_dim,
-            dropout=0.0,
-            activation=F.gelu,
-            batch_first=True,
         )
 
         self.__nheads = nheads
@@ -50,11 +69,10 @@ class PPD(nn.Module):
             x_test.size(0) * self.__nheads, 1, 1
         )
 
-        out: th.Tensor = self.__trf(
-            x_train, x_test, src_mask=src_mask, tgt_mask=tgt_mask
-        )
+        out_enc = self.__trf_enc(x_train, mask=src_mask)
+        out_dec = self.__trf_dec(x_test, out_enc, tgt_mask=tgt_mask)
 
-        out = self.__to_class(out)
+        out: th.Tensor = self.__to_class(out_dec)
 
         return out
 
@@ -65,6 +83,7 @@ class TabPFN(nn.Module):
         max_features: int,
         max_nb_class: int,
         encoder_dim: int,
+        y_emb_dim: int,
         ppd_dim: int,
         ppd_hidden_dim: int,
         nheads: int,
@@ -77,7 +96,7 @@ class TabPFN(nn.Module):
         self.__data_lbl_enc = DataAndLabelEncoder(
             max_features,
             max_nb_class,
-            max_features,
+            y_emb_dim,
             encoder_dim,
             ppd_dim,
         )

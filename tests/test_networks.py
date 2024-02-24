@@ -125,6 +125,7 @@ def test_tab_pfn(
     device: str,
 ) -> None:
     encoder_dim = 2
+    y_emb_dim = 2
     model_dim = 2
     hidden_dim = 2
     nheads = 1
@@ -134,6 +135,7 @@ def test_tab_pfn(
         max_features,
         nb_class,
         encoder_dim,
+        y_emb_dim,
         model_dim,
         hidden_dim,
         nheads,

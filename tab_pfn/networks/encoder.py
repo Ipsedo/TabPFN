@@ -24,13 +24,13 @@ class DataEncoder(nn.Sequential):
         super().__init__(
             nn.Linear(x_max_dim, hidden_dim),
             nn.Mish(),
-            nn.LayerNorm(hidden_dim),
+            nn.LayerNorm(hidden_dim, eps=1e-8),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Mish(),
-            nn.LayerNorm(hidden_dim),
+            nn.LayerNorm(hidden_dim, eps=1e-8),
             nn.Linear(hidden_dim, output_dim),
             nn.Mish(),
-            nn.LayerNorm(output_dim),
+            nn.LayerNorm(output_dim, eps=1e-8),
         )
 
         self.apply(_init_encoder)
@@ -47,7 +47,7 @@ class DataAndLabelEncoder(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim)
+        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim, max_norm=1.0)
         self.__encoder = DataEncoder(
             x_max_dim + y_emb_dim, hidden_dim, output_dim
         )

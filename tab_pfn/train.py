@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 from os import mkdir
 from os.path import exists, isdir, join
 from random import uniform
@@ -6,10 +7,10 @@ from random import uniform
 import mlflow
 import torch as th
 from torch.nn import functional as F
-from torch.optim.lr_scheduler import CosineAnnealingLR
 from tqdm import tqdm
 
 from .metrics import AccuracyMeter, ConfusionMeter, LossMeter
+from .networks import get_cosine_schedule_with_warmup
 from .options import ModelOptions, TrainOptions
 
 
@@ -21,6 +22,19 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             raise NotADirectoryError(train_options.output_folder)
 
         tab_pfn = model_options.get_tab_pfn()
+
+        with open(
+            join(train_options.output_folder, "options.json"),
+            "w",
+            encoding="utf-8",
+        ) as file:
+            json.dump(
+                {
+                    "model_options": model_options.to_dict(),
+                    "train_options": train_options.to_dict(),
+                },
+                file,
+            )
 
         print(f"parameters : {tab_pfn.count_parameters()}")
 
@@ -36,8 +50,11 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             tab_pfn.parameters(), lr=train_options.learning_rate
         )
 
-        lr_scheduler = CosineAnnealingLR(
-            optim, train_options.steps, train_options.cosine_min_lr
+        lr_scheduler = get_cosine_schedule_with_warmup(
+            optim,
+            train_options.warmup_steps,
+            train_options.steps,
+            train_options.min_lr,
         )
 
         mlflow.log_params(
