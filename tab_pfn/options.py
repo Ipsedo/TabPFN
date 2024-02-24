@@ -45,7 +45,6 @@ class TrainOptions(NamedTuple):
     data_ratios: Tuple[float, float]
     save_every: int
     metric_window_size: int
-    warmup_steps: int
     cosine_min_lr: float
     output_folder: str
 
