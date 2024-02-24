@@ -94,8 +94,15 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             )
 
             out = tab_pfn(x_train, y_train, x_test)
-            loss = F.cross_entropy(
-                out.permute(0, 2, 1), y_test, reduction="mean"
+            # pylint: disable=not-callable
+            y_test_ohe = F.one_hot(y_test, model_options.max_class).to(
+                th.float
+            )
+            # pylint: enable=not-callable
+            loss = (
+                F.mse_loss(out, y_test_ohe, reduction="none")
+                .sum(dim=-1)
+                .mean()
             )
 
             optim.zero_grad(set_to_none=True)
