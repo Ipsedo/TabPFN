@@ -7,10 +7,10 @@ from typing import Tuple
 import mlflow
 import torch as th
 from torch.nn import functional as F
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from tqdm import tqdm
 
 from .metrics import AccuracyMeter, ConfusionMeter, LossMeter
-from .networks import get_cosine_schedule_with_warmup
 from .options import ModelOptions, TrainOptions
 
 
@@ -65,11 +65,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             tab_pfn.parameters(), lr=train_options.learning_rate
         )
 
-        lr_scheduler = get_cosine_schedule_with_warmup(
-            optim,
-            train_options.warmup_steps,
-            train_options.steps,
-            train_options.cosine_min_lr,
+        lr_scheduler = CosineAnnealingLR(
+            optim, train_options.steps, train_options.cosine_min_lr
         )
 
         mlflow.log_params(
@@ -102,15 +99,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             )
 
             out = tab_pfn(x_train, y_train, x_test)
-            # pylint: disable=not-callable
-            y_test_ohe = F.one_hot(y_test, model_options.max_class).to(
-                th.float
-            )
-            # pylint: enable=not-callable
-            loss = (
-                F.mse_loss(out, y_test_ohe, reduction="none")
-                .sum(dim=-1)
-                .mean()
+            loss = F.cross_entropy(
+                out.permute(0, 2, 1), y_test, reduction="mean"
             )
 
             optim.zero_grad(set_to_none=True)
