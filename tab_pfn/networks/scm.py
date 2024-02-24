@@ -105,8 +105,7 @@ class SCM(nn.Module):
                 1e-4,
                 0.3,
                 1e-8,
-            )
-            + 1e-8,
+            ),
         )
         self.register_buffer("_noise_mean", th.zeros(n_layer, hidden_size))
 

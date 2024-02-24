@@ -11,10 +11,10 @@ def main() -> None:
 
     parser.add_argument("--max-features", type=int, default=100)
     parser.add_argument("--max-class", type=int, default=10)
-    parser.add_argument("--encoder-dim", type=int, default=64)
-    parser.add_argument("--y-emb-dim", type=int, default=16)
-    parser.add_argument("--ppd-dim", type=int, default=128)
-    parser.add_argument("--ppd-hidden-dim", type=int, default=256)
+    parser.add_argument("--encoder-dim", type=int, default=256)
+    parser.add_argument("--y-emb-dim", type=int, default=64)
+    parser.add_argument("--ppd-dim", type=int, default=512)
+    parser.add_argument("--ppd-hidden-dim", type=int, default=1024)
     parser.add_argument("--nheads", type=int, default=4)
     parser.add_argument("--num-layers", type=int, default=6)
     parser.add_argument("--cuda", action="store_true")
@@ -26,14 +26,12 @@ def main() -> None:
     train_parser.add_argument("output_folder", type=str)
     train_parser.add_argument("--learning-rate", type=float, default=2.5e-5)
     train_parser.add_argument("--steps", type=int, default=400000)
-    train_parser.add_argument("--batch-size", type=int, default=12)
+    train_parser.add_argument("--batch-size", type=int, default=6)
     train_parser.add_argument("--data", type=int, default=2048)
     train_parser.add_argument(
         "--data-ratios", type=float, nargs=2, default=(0.5, 0.75)
     )
     train_parser.add_argument("--save-every", type=int, default=1024)
-    train_parser.add_argument("--warmup-steps", type=int, default=25000)
-    train_parser.add_argument("--min-lr", type=float, default=1e-9)
     train_parser.add_argument("--metric-window-size", type=int, default=64)
 
     infer_parser = sub_parser.add_parser("infer")
@@ -68,8 +66,6 @@ def main() -> None:
             args.data_ratios,
             args.save_every,
             args.metric_window_size,
-            args.warmup_steps,
-            args.min_lr,
             args.output_folder,
         )
 

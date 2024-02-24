@@ -24,13 +24,13 @@ class DataEncoder(nn.Sequential):
         super().__init__(
             nn.Linear(x_max_dim, hidden_dim),
             nn.Mish(),
-            nn.LayerNorm(hidden_dim, eps=1e-8),
+            nn.LayerNorm(hidden_dim),
             nn.Linear(hidden_dim, hidden_dim),
             nn.Mish(),
-            nn.LayerNorm(hidden_dim, eps=1e-8),
+            nn.LayerNorm(hidden_dim),
             nn.Linear(hidden_dim, output_dim),
             nn.Mish(),
-            nn.LayerNorm(output_dim, eps=1e-8),
+            nn.LayerNorm(output_dim),
         )
 
         self.apply(_init_encoder)

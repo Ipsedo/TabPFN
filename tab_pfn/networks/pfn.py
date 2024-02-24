@@ -20,8 +20,8 @@ class PPD(nn.Module):
     ) -> None:
         super().__init__()
 
-        dropout = 0.1
-        layer_norm_eps = 1e-8
+        dropout = 0.0
+        layer_norm_eps = 1e-5
 
         self.__trf_enc = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
