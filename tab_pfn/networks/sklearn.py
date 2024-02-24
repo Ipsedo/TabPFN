@@ -111,23 +111,27 @@ class _SklearnTabPFN(SklearnClassifier):
 
     def __convert_x_to_tensor(self, x: T) -> th.Tensor:
         if isinstance(x, pd.DataFrame):
-            return self.__x_df_to_tensor(x)
-        if isinstance(x, np.ndarray):
-            return self.__x_np_to_tensor(x)
-        if isinstance(x, th.Tensor):
-            return pad_features(x, self.__model.nb_features)
+            out = self.__x_df_to_tensor(x)
+        elif isinstance(x, np.ndarray):
+            out = self.__x_np_to_tensor(x)
+        elif isinstance(x, th.Tensor):
+            out = x
+        else:
+            raise TypeError(f"Unrecognized input type {type(x)}")
 
-        raise TypeError(f"Unrecognized input type {type(x)}")
+        return pad_features(out, self.__model.nb_features).to(th.float)
 
     def __convert_y_to_tensor(self, y: T) -> th.Tensor:
         if isinstance(y, pd.Series):
-            return self.__y_df_to_tensor(y)
-        if isinstance(y, np.ndarray):
-            return self.__y_np_to_tensor(y)
-        if isinstance(y, th.Tensor):
-            return y
+            out = self.__y_df_to_tensor(y)
+        elif isinstance(y, np.ndarray):
+            out = self.__y_np_to_tensor(y)
+        elif isinstance(y, th.Tensor):
+            out = y
+        else:
+            raise TypeError(f"Unrecognized input type {type(y)}")
 
-        raise TypeError(f"Unrecognized input type {type(y)}")
+        return out.to(th.long)
 
     def __x_df_to_tensor(self, x: pd.DataFrame) -> th.Tensor:
         for c in x.columns:
@@ -146,24 +150,21 @@ class _SklearnTabPFN(SklearnClassifier):
                 f"input {len(x.columns)}"
             )
 
-        return pad_features(
-            th.tensor(x.to_numpy()), self.__model.nb_features
-        ).to(th.float)
+        return th.tensor(x.to_numpy())
 
     def __y_df_to_tensor(self, y: pd.Series) -> th.Tensor:
         self.__class_to_idx = {c: i for i, c in enumerate(y.unique())}
 
         y = y.apply(lambda c: self.__class_to_idx[c])
 
-        return th.tensor(y.to_numpy()).to(th.long)
+        return th.tensor(y.to_numpy())
 
-    def __x_np_to_tensor(self, x: np.ndarray) -> th.Tensor:
+    @staticmethod
+    def __x_np_to_tensor(x: np.ndarray) -> th.Tensor:
         assert len(x.shape) == 2
-        return pad_features(th.tensor(x), self.__model.nb_features).to(
-            th.float
-        )
+        return th.tensor(x)
 
     @staticmethod
     def __y_np_to_tensor(y: np.ndarray) -> th.Tensor:
         assert len(y.shape) == 1
-        return th.tensor(y).to(th.long)
+        return th.tensor(y)
