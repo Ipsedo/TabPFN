@@ -173,11 +173,19 @@ class SCM(nn.Module):
             th.arange(0, self.__max_nb_class)[: self.__nb_class]
         ]
 
+    def get_class_mask(self) -> th.Tensor:
+        mask = th.zeros(
+            self.__max_nb_class,
+            device="cuda" if next(self.buffers()).is_cuda else "cpu",
+        )
+        mask[self.get_class_index()] = 1.0
+        return mask
+
     def inverse_class_permutations(self) -> th.Tensor:
         permutations = th.arange(
             0,
             self.__max_nb_class,
-            device="cuda" if next(self.parameters()).is_cuda else "cpu",
+            device="cuda" if next(self.buffers()).is_cuda else "cpu",
         )[self.__zy_rand_perm]
         return th.argsort(permutations)
 

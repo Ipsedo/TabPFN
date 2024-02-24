@@ -2,7 +2,6 @@
 from os import mkdir
 from os.path import exists, isdir, join
 from random import uniform
-from typing import Tuple
 
 import mlflow
 import torch as th
@@ -12,34 +11,6 @@ from tqdm import tqdm
 
 from .metrics import AccuracyMeter, ConfusionMeter, LossMeter
 from .options import ModelOptions, TrainOptions
-
-
-def _generate_split_train_test(
-    model_options: ModelOptions,
-    datasets: int,
-    data: int,
-    train_ratio: float,
-    device: th.device,
-) -> Tuple[Tuple[th.Tensor, th.Tensor], Tuple[th.Tensor, th.Tensor]]:
-    x_list, y_list = zip(
-        *[model_options.get_scm()(data) for _ in range(datasets)]
-    )
-
-    x = th.stack(x_list, dim=0).to(device)
-    y = th.stack(y_list, dim=0).to(device)
-
-    train_nb = int(data * train_ratio)
-
-    x_train, y_train = (
-        x[:, :train_nb],
-        y[:, :train_nb],
-    )
-    x_test, y_test = (
-        x[:, train_nb:],
-        y[:, train_nb:],
-    )
-
-    return (x_train, y_train), (x_test, y_test)
 
 
 def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
@@ -90,12 +61,25 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                 train_options.data_ratios[0], train_options.data_ratios[1]
             )
 
-            (x_train, y_train), (x_test, y_test) = _generate_split_train_test(
-                model_options,
-                train_options.batch_size,
-                train_options.n_data,
-                random_ratio,
-                device,
+            x_list, y_list = zip(
+                *[
+                    model_options.get_scm()(train_options.n_data)
+                    for _ in range(train_options.batch_size)
+                ]
+            )
+
+            x = th.stack(x_list, dim=0).to(device)
+            y = th.stack(y_list, dim=0).to(device)
+
+            train_nb = int(train_options.n_data * random_ratio)
+
+            x_train, y_train = (
+                x[:, :train_nb],
+                y[:, :train_nb],
+            )
+            x_test, y_test = (
+                x[:, train_nb:],
+                y[:, train_nb:],
             )
 
             out = tab_pfn(x_train, y_train, x_test)
@@ -109,8 +93,12 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             lr_scheduler.step()
 
             loss_meter.add(loss.item())
-            confusion_meter.add(out.flatten(0, 1), y_test.flatten(0, 1))
-            accuracy_meter.add(out.flatten(0, 1), y_test.flatten(0, 1))
+
+            out = out.flatten(0, 1)
+            y_test = y_test.flatten(0, 1)
+
+            confusion_meter.add(out, y_test)
+            accuracy_meter.add(out, y_test)
 
             precision = confusion_meter.precision().mean().item()
             recall = confusion_meter.recall().mean().item()
