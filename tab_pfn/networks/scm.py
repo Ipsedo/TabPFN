@@ -95,6 +95,7 @@ class SCM(nn.Module):
         # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         # cov_mat = cov_mat @ cov_mat.t()
 
+        self.register_buffer("_noise_mean", th.zeros(n_layer, hidden_size))
         self.register_buffer(
             "_noise_sigma",
             tnlu(
@@ -107,12 +108,9 @@ class SCM(nn.Module):
                 1e-8,
             ),
         )
-        self.register_buffer("_noise_mean", th.zeros(n_layer, hidden_size))
 
-        self.register_buffer(
-            "_cause_sigma", th.abs(th.randn(hidden_size)) + 1e-8
-        )
-        self.register_buffer("_cause_mean", th.randn(hidden_size))
+        self.register_buffer("_cause_mean", th.zeros(hidden_size))
+        self.register_buffer("_cause_sigma", th.ones(hidden_size))
 
         self.apply(_init_scm)
 
