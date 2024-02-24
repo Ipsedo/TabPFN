@@ -75,7 +75,7 @@ class _SklearnTabPFN(SklearnClassifier):
         return self.__tensor_to_input_type(out, x)
 
     def predict_proba(self, x: T) -> T:
-        out = self.__predict_proba_tensor(x)
+        out = th.softmax(self.__predict_proba_tensor(x), dim=-1)
         return self.__tensor_to_input_type(out, x)
 
     def __predict_proba_tensor(self, x: T) -> th.Tensor:
