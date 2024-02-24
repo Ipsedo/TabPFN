@@ -48,10 +48,20 @@ class _SklearnTabPFN(SklearnClassifier):
         x_tensor = self.__convert_x_to_tensor(x)
         y_tensor = self.__convert_y_to_tensor(y)
 
+        if len(self.__class_to_idx) == 0:
+            # case of numpy and torch input
+            self.__class_to_idx = {
+                c: i for i, c in enumerate(sorted(th.unique(y_tensor)))
+            }
+
         assert len(x_tensor.size()) == 2
         assert x_tensor.size(1) == self.__model.nb_features
+
         assert len(y_tensor.size()) == 1
         assert x_tensor.size(0) == y_tensor.size(0)
+
+        assert th.all(th.ge(y_tensor, 0))
+        assert th.all(th.lt(y_tensor, len(self.__class_to_idx)))
 
         device = th.device(
             "cuda" if next(self.__model.parameters()).is_cuda else "cpu"
@@ -59,12 +69,6 @@ class _SklearnTabPFN(SklearnClassifier):
 
         self.__x_train = x_tensor.to(device=device)[None]
         self.__y_train = y_tensor.to(device=device)[None]
-
-        if len(self.__class_to_idx) == 0:
-            # case of numpy and torch input
-            self.__class_to_idx = {
-                c: i for i, c in enumerate(th.unique(self.__y_train))
-            }
 
     def predict(self, x: T) -> T:
         out = self.__predict_proba_tensor(x).argmax(dim=-1)

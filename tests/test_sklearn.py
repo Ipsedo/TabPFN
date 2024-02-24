@@ -9,7 +9,7 @@ from tab_pfn.networks import SklearnClassifier, TabPFN
 
 @pytest.mark.parametrize("n_data_train", [128, 256])
 @pytest.mark.parametrize("n_data_test", [8, 16])
-@pytest.mark.parametrize("n_features", [32, 64])
+@pytest.mark.parametrize("n_features", [4, 8])
 @pytest.mark.parametrize("n_classes", [2, 10])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_torch(
@@ -19,7 +19,7 @@ def test_torch(
     n_classes: int,
     device: str,
 ) -> None:
-    tab_pfn = TabPFN(100, 10, 4, 4, 4, 1, 1)
+    tab_pfn = TabPFN(10, 10, 4, 4, 4, 1, 1)
     tab_pfn.to(th.device(device))
 
     tab_pfn_clf = SklearnClassifier.from_torch(tab_pfn)
@@ -47,7 +47,7 @@ def test_torch(
 
 @pytest.mark.parametrize("n_data_train", [128, 256])
 @pytest.mark.parametrize("n_data_test", [8, 16])
-@pytest.mark.parametrize("n_features", [32, 64])
+@pytest.mark.parametrize("n_features", [4, 8])
 @pytest.mark.parametrize("n_classes", [2, 10])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_numpy(
@@ -57,7 +57,7 @@ def test_numpy(
     n_classes: int,
     device: str,
 ) -> None:
-    tab_pfn = TabPFN(100, 10, 4, 4, 4, 1, 1)
+    tab_pfn = TabPFN(10, 10, 4, 4, 4, 1, 1)
     tab_pfn.to(th.device(device))
 
     tab_pfn_clf = SklearnClassifier.from_torch(tab_pfn)
@@ -85,7 +85,7 @@ def test_numpy(
 
 @pytest.mark.parametrize("n_data_train", [128, 256])
 @pytest.mark.parametrize("n_data_test", [8, 16])
-@pytest.mark.parametrize("n_features", [32, 64])
+@pytest.mark.parametrize("n_features", [4, 8])
 @pytest.mark.parametrize("n_classes", [2, 10])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_pandas(
@@ -95,7 +95,7 @@ def test_pandas(
     n_classes: int,
     device: str,
 ) -> None:
-    tab_pfn = TabPFN(100, 10, 4, 4, 4, 1, 1)
+    tab_pfn = TabPFN(10, 10, 4, 4, 4, 1, 1)
     tab_pfn.to(th.device(device))
 
     tab_pfn_clf = SklearnClassifier.from_torch(tab_pfn)
