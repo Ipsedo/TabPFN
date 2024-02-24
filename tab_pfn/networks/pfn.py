@@ -26,7 +26,7 @@ class PPD(nn.Module):
             num_layers,
             num_layers,
             hidden_dim,
-            dropout=0.1,
+            dropout=0.0,
             activation=F.gelu,
             batch_first=True,
         )
