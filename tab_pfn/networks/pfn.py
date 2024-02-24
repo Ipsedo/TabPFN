@@ -114,6 +114,17 @@ class TabPFN(nn.Module):
     def forward(
         self, x_train: th.Tensor, y_train: th.Tensor, x_test: th.Tensor
     ) -> th.Tensor:
+        assert len(x_train.size()) == 3
+        assert x_train.size(2) == self.__max_features
+
+        assert len(y_train.size()) == 2
+        assert x_train.size(0) == y_train.size(0)
+        assert x_train.size(1) == y_train.size(1)
+
+        assert len(x_test.size()) == 3
+        assert x_test.size(2) == self.__max_features
+        assert x_test.size(0) == x_train.size(0)
+
         x_mean = x_train.mean(dim=1, keepdim=True)
         x_std = x_train.std(dim=1, keepdim=True) + 1e-5
 
