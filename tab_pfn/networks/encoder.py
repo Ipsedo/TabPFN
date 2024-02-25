@@ -6,10 +6,10 @@ from torch import nn
 
 def _init_encoder(module: nn.Module) -> None:
     if isinstance(module, nn.Linear):
-        nn.init.xavier_normal_(module.weight, gain=1e-3)
+        nn.init.xavier_normal_(module.weight)
 
         if module.bias is not None:
-            nn.init.normal_(module.bias, std=1e-3)
+            nn.init.normal_(module.bias)
 
     elif isinstance(module, nn.LayerNorm):
         if module.elementwise_affine:
