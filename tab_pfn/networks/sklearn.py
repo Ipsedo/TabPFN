@@ -100,7 +100,7 @@ class _SklearnTabPFN(SklearnClassifier):
                 self.__x_train, self.__y_train, x_test[None]
             )[0]
 
-        return out[:, : len(self.__class_to_idx)]
+        return th.nan_to_num(out[:, : len(self.__class_to_idx)], nan=0)
 
     def __tensor_to_input_type(self, out: th.Tensor, x_test: T) -> T:
         if isinstance(x_test, th.Tensor):
@@ -114,8 +114,8 @@ class _SklearnTabPFN(SklearnClassifier):
                 return pd.DataFrame(
                     array, columns=list(self.__class_to_idx.keys())
                 )
-
-            pred_class = [self.__class_to_idx[c] for c in array]
+            idx_to_class = {idx: c for c, idx in self.__class_to_idx.items()}
+            pred_class = [idx_to_class[c] for c in array]
             return pd.DataFrame(pred_class, columns=["prediction"])
 
         raise TypeError(f"Unsupported input type: {type(x_test)}")
