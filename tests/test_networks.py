@@ -7,7 +7,7 @@ import torch as th
 from tab_pfn.networks import PPD, SCM, DataAndLabelEncoder, DataEncoder, TabPFN
 
 
-@pytest.mark.parametrize("batch_size", [2, 3])
+@pytest.mark.parametrize("batch_size", [16, 32])
 @pytest.mark.parametrize("n_features", [2, 64])
 @pytest.mark.parametrize("class_bound", [(2, 4), (4, 8)])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])

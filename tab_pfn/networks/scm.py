@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from random import choice, randint, uniform
+from random import choice, randint, sample, uniform
 from typing import Callable, List, Tuple
 
 import torch as th
@@ -159,10 +159,7 @@ class SCM(nn.Module):
         # create class interval if first time
         if len(self.__y_class_intervals) == 0:
             self.__y_class_intervals = sorted(
-                [
-                    uniform(y.min().item(), y.max().item())
-                    for _ in range(self.__nb_class - 1)
-                ]
+                sample(y.tolist(), self.__nb_class - 1)
             )
 
         return (
