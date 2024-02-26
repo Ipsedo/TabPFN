@@ -91,7 +91,9 @@ class SCM(nn.Module):
         drop_neuron_proba = 0.9 * beta(a, b)
 
         for lin in self.__mlp:
-            lin.weight.data.mul_(th.rand(*lin.weight.size()) > drop_neuron_proba)
+            lin.weight.data.mul_(
+                th.rand(*lin.weight.size()) > drop_neuron_proba
+            )
 
         # activation functions
         self.__act = nn.ModuleList(RandomActivation(h) for h in hidden_sizes)
@@ -122,12 +124,7 @@ class SCM(nn.Module):
         out = Normal(self._cause_mean, self._cause_sigma).sample(epsilon_size)
         outs = []
 
-        for i, (layer, act) in enumerate(
-            zip(
-                self.__mlp,
-                self.__act
-            )
-        ):
+        for i, (layer, act) in enumerate(zip(self.__mlp, self.__act)):
             loc = self.get_buffer(f"_noise_mean_{i}")
             sig = self.get_buffer(f"_noise_sigma_{i}")
 
