@@ -85,7 +85,7 @@ class SCM(nn.Module):
         self.__zy_rand_perm = th.randperm(self.__max_nb_class)
         self.__shuffle_class = shuffle_class
 
-        # drop neurons
+        # drop neuron connexions
         a = th.tensor(uniform(0.1, 5))
         b = th.tensor(uniform(0.1, 5))
         drop_neuron_proba = 0.9 * beta(a, b)
