@@ -3,6 +3,8 @@ numpy
 tqdm
 mlflow
 pandas
+openml
+scikit-learn
 
 pre-commit
 mypy

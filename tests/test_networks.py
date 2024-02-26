@@ -7,7 +7,7 @@ import torch as th
 from tab_pfn.networks import PPD, SCM, DataAndLabelEncoder, DataEncoder, TabPFN
 
 
-@pytest.mark.parametrize("batch_size", [2, 3])
+@pytest.mark.parametrize("batch_size", [16, 32])
 @pytest.mark.parametrize("n_features", [2, 64])
 @pytest.mark.parametrize("class_bound", [(2, 4), (4, 8)])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -125,6 +125,7 @@ def test_tab_pfn(
     device: str,
 ) -> None:
     encoder_dim = 2
+    y_emb_dim = 2
     model_dim = 2
     hidden_dim = 2
     nheads = 1
@@ -134,6 +135,7 @@ def test_tab_pfn(
         max_features,
         nb_class,
         encoder_dim,
+        y_emb_dim,
         model_dim,
         hidden_dim,
         nheads,

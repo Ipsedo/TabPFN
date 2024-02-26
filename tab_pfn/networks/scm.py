@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from random import choice, randint, uniform
+from random import choice, randint, sample, uniform
 from typing import Callable, List, Tuple
 
 import torch as th
@@ -15,6 +15,29 @@ def _init_scm(module: nn.Module) -> None:
         nn.init.normal_(module.weight, std=tnlu_float(1e-2, 10, 0.0))
 
 
+class RandomActivation(nn.Module):
+    def __init__(self, size: int) -> None:
+        super().__init__()
+
+        act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
+            F.relu,
+            F.tanh,
+            F.leaky_relu,
+            F.elu,
+            F.sigmoid,
+            lambda t: t,  # identity
+        ]
+
+        self.__act: List[Callable[[th.Tensor], th.Tensor]] = [
+            choice(act_fn) for _ in range(size)
+        ]
+
+    def forward(self, x: th.Tensor) -> th.Tensor:
+        return th.stack(
+            [act(d) for d, act in zip(x.unbind(dim=1), self.__act)], dim=1
+        )
+
+
 class SCM(nn.Module):
     def __init__(
         self,
@@ -25,17 +48,22 @@ class SCM(nn.Module):
         super().__init__()
 
         # setup MLP
-        n_layer: int = tnlu_int(2, 6, 2)
-        hidden_size: int = tnlu_int(5, 130, 4)
+        n_layer: int = tnlu_int(1, 6, 2)
+        hidden_sizes: List[int] = [tnlu_int(5, 130, 4) for _ in range(n_layer)]
+        self.__max_hidden_size = max(hidden_sizes)
 
         self.__mlp = nn.ModuleList(
-            nn.Linear(hidden_size, hidden_size, bias=False)
-            for _ in range(n_layer)
+            nn.Linear(
+                hidden_sizes[i - 1] if i > 0 else hidden_sizes[0],
+                hidden_sizes[i],
+                bias=False,
+            )
+            for i in range(len(hidden_sizes))
         )
 
         # create node indexes list
         node_list = th.tensor(
-            [[i, j] for i in range(n_layer) for j in range(hidden_size)]
+            [[i, j] for i, h in enumerate(hidden_sizes) for j in range(h)]
         )
         node_list = node_list[th.randperm(node_list.size(0))]
 
@@ -67,7 +95,7 @@ class SCM(nn.Module):
 
         mask_index_i, mask_index_j = th.split(e_node_list, 1, dim=1)
 
-        mask = th.ones(n_layer, hidden_size)
+        mask = th.ones(n_layer, self.__max_hidden_size)
         mask[mask_index_i.squeeze(-1), mask_index_j.squeeze(-1)] = (
             drop_neuron_proba < th.rand(e_node_list.size(0))
         ).to(th.float)
@@ -75,17 +103,7 @@ class SCM(nn.Module):
         self.register_buffer("_mask", mask)
 
         # activation functions
-        act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
-            F.relu,
-            F.tanh,
-            F.leaky_relu,
-            F.elu,
-            lambda t: t,  # identity
-        ]
-
-        self.__act: List[Callable[[th.Tensor], th.Tensor]] = [
-            choice(act_fn) for _ in range(n_layer)
-        ]
+        self.__act = nn.ModuleList(RandomActivation(h) for h in hidden_sizes)
 
         # noise params for SCM (epsilon)
 
@@ -94,25 +112,15 @@ class SCM(nn.Module):
         # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         # cov_mat = cov_mat @ cov_mat.t()
 
-        self.register_buffer(
-            "_noise_sigma",
-            tnlu(
-                (
-                    n_layer,
-                    hidden_size,
-                ),
-                1e-4,
-                0.3,
-                1e-8,
+        for i, h in enumerate(hidden_sizes):
+            self.register_buffer(f"_noise_mean_{i}", th.zeros(h))
+            self.register_buffer(
+                f"_noise_sigma_{i}",
+                tnlu((h,), 1e-4, 0.3, 1e-8),
             )
-            + 1e-5,
-        )
-        self.register_buffer("_noise_mean", th.zeros(n_layer, hidden_size))
 
-        self.register_buffer(
-            "_cause_sigma", th.abs(th.randn(hidden_size)) + 1e-5
-        )
-        self.register_buffer("_cause_mean", th.randn(hidden_size))
+        self.register_buffer("_cause_mean", th.zeros(hidden_sizes[0]))
+        self.register_buffer("_cause_sigma", th.ones(hidden_sizes[0]))
 
         self.apply(_init_scm)
 
@@ -123,18 +131,22 @@ class SCM(nn.Module):
         out = Normal(self._cause_mean, self._cause_sigma).sample(epsilon_size)
         outs = []
 
-        for layer, act, mask, loc, sig in zip(
-            self.__mlp,
-            self.__act,
-            self._mask,
-            self._noise_mean,
-            self._noise_sigma,
-        ):
-            out = (
-                act(layer(out) + Normal(loc, sig).sample(epsilon_size))
-                * mask[None, :]
+        for i, (layer, act, mask) in enumerate(
+            zip(
+                self.__mlp,
+                self.__act,
+                self._mask,
             )
-            outs.append(out)
+        ):
+            loc = self.get_buffer(f"_noise_mean_{i}")
+            sig = self.get_buffer(f"_noise_sigma_{i}")
+
+            dist = Normal(loc, sig)
+
+            out = act(layer(out) + dist.sample(epsilon_size))
+            out = out * mask[None, : out.size(1)]
+
+            outs.append(F.pad(out, (0, self.__max_hidden_size - out.size(1))))
 
         # stack layers output
         # (batch, layer, hidden_features)
@@ -147,10 +159,7 @@ class SCM(nn.Module):
         # create class interval if first time
         if len(self.__y_class_intervals) == 0:
             self.__y_class_intervals = sorted(
-                [
-                    uniform(y.min().item(), y.max().item())
-                    for _ in range(self.__nb_class - 1)
-                ]
+                sample(y.tolist(), self.__nb_class - 1)
             )
 
         return (
@@ -172,11 +181,19 @@ class SCM(nn.Module):
             th.arange(0, self.__max_nb_class)[: self.__nb_class]
         ]
 
+    def get_class_mask(self) -> th.Tensor:
+        mask = th.zeros(
+            self.__max_nb_class,
+            device="cuda" if next(self.buffers()).is_cuda else "cpu",
+        )
+        mask[self.get_class_index()] = 1.0
+        return mask
+
     def inverse_class_permutations(self) -> th.Tensor:
         permutations = th.arange(
             0,
             self.__max_nb_class,
-            device="cuda" if next(self.parameters()).is_cuda else "cpu",
+            device="cuda" if next(self.buffers()).is_cuda else "cpu",
         )[self.__zy_rand_perm]
         return th.argsort(permutations)
 

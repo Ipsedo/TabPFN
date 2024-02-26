@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+import json
 from os import mkdir
-from os.path import exists, isdir
+from os.path import exists, isdir, join
 
 import torch as th
 from torch.utils.data import DataLoader, random_split
@@ -64,9 +65,31 @@ def infer(model_options: ModelOptions, infer_options: InferOptions) -> None:
             acc_meter.add(out, y)
             conf_meter.add(out, y)
 
-    print(f"accuracy : {acc_meter.accuracy()}")
-    print(f"precisions = {conf_meter.precision().numpy().tolist()}")
-    print(f"recalls = {conf_meter.recall().numpy().tolist()}")
-    print(f"confusion_matrix :\n{conf_meter.conf_mat().numpy()}")
+    accuracy = acc_meter.accuracy()
+    precisions = conf_meter.precision().cpu().numpy().tolist()
+    recalls = conf_meter.recall().cpu().numpy().tolist()
+    conf_mat = conf_meter.conf_mat().cpu().numpy()
+
+    print(f"accuracy : {accuracy}")
+    print(f"precisions = {precisions}")
+    print(f"recalls = {recalls}")
+    print(f"confusion_matrix :\n{conf_mat}")
 
     conf_meter.save_conf_matrix(-1, infer_options.output_folder)
+
+    results_dict = {
+        "nb_classes": dataset.nb_classes,
+        "accuracy": accuracy,
+        "precisions": precisions,
+        "recalls": recalls,
+        "conf_mat": conf_mat.tolist(),
+        "model_options": model_options.to_dict(),
+        "infer_options": infer_options.to_dict(),
+    }
+
+    with open(
+        join(infer_options.output_folder, "results.json"),
+        "w",
+        encoding="utf-8",
+    ) as f:
+        json.dump(results_dict, f)

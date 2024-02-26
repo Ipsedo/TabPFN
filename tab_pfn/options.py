@@ -8,6 +8,7 @@ class ModelOptions(NamedTuple):
     max_features: int
     max_class: int
     encoder_dim: int
+    y_emb_dim: int
     ppd_dim: int
     ppd_hidden_dim: int
     nheads: int
@@ -19,6 +20,7 @@ class ModelOptions(NamedTuple):
             self.max_features,
             self.max_class,
             self.encoder_dim,
+            self.y_emb_dim,
             self.ppd_dim,
             self.ppd_hidden_dim,
             self.nheads,
@@ -45,12 +47,6 @@ class TrainOptions(NamedTuple):
     data_ratios: Tuple[float, float]
     save_every: int
     metric_window_size: int
-    warmup_steps: int
-    cosine_min_lr: float
-    eval_datasets: int
-    eval_data: int
-    eval_train_ratio: float
-    eval_every: int
     output_folder: str
 
     def to_dict(self) -> Dict[str, Any]:
