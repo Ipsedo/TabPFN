@@ -85,22 +85,15 @@ class SCM(nn.Module):
         self.__zy_rand_perm = th.randperm(self.__max_nb_class)
         self.__shuffle_class = shuffle_class
 
-        # E : set from which we drop neurons
-        e_node_list = node_list[self.__n_features + 1 :]
-
         # drop neurons
         a = th.tensor(uniform(0.1, 5))
         b = th.tensor(uniform(0.1, 5))
         drop_neuron_proba = 0.9 * beta(a, b)
 
-        mask_index_i, mask_index_j = th.split(e_node_list, 1, dim=1)
-
-        mask = th.ones(n_layer, self.__max_hidden_size)
-        mask[mask_index_i.squeeze(-1), mask_index_j.squeeze(-1)] = (
-            drop_neuron_proba < th.rand(e_node_list.size(0))
-        ).to(th.float)
-
-        self.register_buffer("_mask", mask)
+        for lin in self.__mlp:
+            lin.weight.data.mul_(
+                th.rand(*lin.weight.size()) > drop_neuron_proba
+            )
 
         # activation functions
         self.__act = nn.ModuleList(RandomActivation(h) for h in hidden_sizes)
@@ -131,21 +124,13 @@ class SCM(nn.Module):
         out = Normal(self._cause_mean, self._cause_sigma).sample(epsilon_size)
         outs = []
 
-        for i, (layer, act, mask) in enumerate(
-            zip(
-                self.__mlp,
-                self.__act,
-                self._mask,
-            )
-        ):
+        for i, (layer, act) in enumerate(zip(self.__mlp, self.__act)):
             loc = self.get_buffer(f"_noise_mean_{i}")
             sig = self.get_buffer(f"_noise_sigma_{i}")
 
             dist = Normal(loc, sig)
 
             out = act(layer(out) + dist.sample(epsilon_size))
-            out = out * mask[None, : out.size(1)]
-
             outs.append(F.pad(out, (0, self.__max_hidden_size - out.size(1))))
 
         # stack layers output

@@ -26,7 +26,7 @@ def main() -> None:
     train_parser.add_argument("output_folder", type=str)
     train_parser.add_argument("--learning-rate", type=float, default=2.5e-5)
     train_parser.add_argument("--steps", type=int, default=400000)
-    train_parser.add_argument("--batch-size", type=int, default=4)
+    train_parser.add_argument("--batch-size", type=int, default=6)
     train_parser.add_argument("--data", type=int, default=2048)
     train_parser.add_argument(
         "--data-ratios", type=float, nargs=2, default=(0.5, 0.75)
