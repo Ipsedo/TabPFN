@@ -19,7 +19,7 @@ def tnlu(
     sigma = th.exp((log_max - log_min) * th.rand(sizes) + log_min)
     mu = th.exp((log_max - log_min) * th.rand(sizes) + log_min)
 
-    sample = th.clamp(th.normal(mu, sigma), 0.0, th.inf) + min_value
+    sample = th.abs(th.normal(mu, sigma)) + min_value
 
     return sample
 
