@@ -4,10 +4,10 @@ from typing import Callable, List, Tuple
 
 import torch as th
 from torch import nn
-from torch.distributions import Normal
+from torch.distributions import Beta, Normal
 from torch.nn import functional as F
 
-from .functions import beta, pad_features, tnlu, tnlu_float, tnlu_int
+from .functions import pad_features, tnlu, tnlu_float, tnlu_int
 
 
 def _init_scm(module: nn.Module) -> None:
@@ -24,7 +24,6 @@ class RandomActivation(nn.Module):
             F.tanh,
             F.leaky_relu,
             F.elu,
-            F.sigmoid,
             lambda t: t,  # identity
         ]
 
@@ -88,7 +87,7 @@ class SCM(nn.Module):
         # drop neuron connexions
         a = th.tensor(uniform(0.1, 5))
         b = th.tensor(uniform(0.1, 5))
-        drop_neuron_proba = 0.9 * beta(a, b)
+        drop_neuron_proba = 0.9 * Beta(a, b).sample(th.Size((1,))).item()
 
         for lin in self.__mlp:
             lin.weight.data.mul_(
