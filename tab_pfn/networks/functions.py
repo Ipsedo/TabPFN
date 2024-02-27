@@ -3,6 +3,7 @@ import math
 from typing import Tuple
 
 import torch as th
+from torch.distributions import Normal
 from torch.nn import functional as F
 
 
@@ -19,7 +20,11 @@ def tnlu(
     sigma = th.exp((log_max - log_min) * th.rand(sizes) + log_min)
     mu = th.exp((log_max - log_min) * th.rand(sizes) + log_min)
 
-    sample = th.abs(th.normal(mu, sigma)) + min_value
+    loi = Normal(mu, sigma)
+    sample: th.Tensor = (
+        loi.icdf((th.rand(*sizes) - 1) * (1 - loi.cdf(th.tensor(0))) + 1)
+        + min_value
+    )
 
     return sample
 
@@ -40,10 +45,6 @@ def tnlu_float(
     min_value: float,
 ) -> float:
     return tnlu((1,), mu_min, mu_max, min_value).item()
-
-
-def beta(x: th.Tensor, y: th.Tensor) -> th.Tensor:
-    return th.exp(th.lgamma(x) + th.lgamma(y) - th.lgamma(x + y))
 
 
 def pad_features(x_to_pad: th.Tensor, max_features: int) -> th.Tensor:
