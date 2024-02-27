@@ -17,25 +17,20 @@ def _init_encoder(module: nn.Module) -> None:
             nn.init.constant_(module.bias, 0.0)
 
 
-class BatchNorm(nn.BatchNorm1d):
-    # pylint: disable=arguments-renamed
-    def forward(self, x: th.Tensor) -> th.Tensor:
-        return super().forward(x.permute(0, 2, 1)).permute(0, 2, 1)
-
-    # pylint: enable=arguments-renamed
-
-
 class DataEncoder(nn.Sequential):
     def __init__(
         self, x_max_dim: int, hidden_dim: int, output_dim: int
     ) -> None:
         super().__init__(
-            nn.Linear(x_max_dim, hidden_dim, bias=False),
+            nn.Linear(x_max_dim, hidden_dim),
             nn.Mish(),
-            BatchNorm(hidden_dim),
-            nn.Linear(hidden_dim, output_dim, bias=False),
+            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.Mish(),
-            BatchNorm(output_dim),
+            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, output_dim),
+            nn.Mish(),
+            nn.LayerNorm(output_dim),
         )
 
         self.apply(_init_encoder)
@@ -52,7 +47,7 @@ class DataAndLabelEncoder(nn.Module):
     ) -> None:
         super().__init__()
 
-        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim)
+        self.__y_emb = nn.Embedding(nb_class_max, y_emb_dim, max_norm=1.0)
         self.__encoder = DataEncoder(
             x_max_dim + y_emb_dim, hidden_dim, output_dim
         )
