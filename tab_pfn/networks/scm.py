@@ -15,28 +15,6 @@ def _init_scm(module: nn.Module) -> None:
         nn.init.normal_(module.weight, std=tnlu_float(1e-2, 10, 0.0))
 
 
-class RandomActivation(nn.Module):
-    def __init__(self, size: int) -> None:
-        super().__init__()
-
-        act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
-            F.relu,
-            F.tanh,
-            F.leaky_relu,
-            F.elu,
-            lambda t: t,  # identity
-        ]
-
-        self.__act: List[Callable[[th.Tensor], th.Tensor]] = [
-            choice(act_fn) for _ in range(size)
-        ]
-
-    def forward(self, x: th.Tensor) -> th.Tensor:
-        return th.stack(
-            [act(d) for d, act in zip(x.unbind(dim=1), self.__act)], dim=1
-        )
-
-
 class SCM(nn.Module):
     def __init__(
         self,
@@ -94,9 +72,13 @@ class SCM(nn.Module):
             )
 
         # activation functions
-        self.__act = nn.ModuleList(
-            RandomActivation(hidden_sizes) for _ in range(n_layer)
-        )
+        act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
+            F.tanh,
+            F.leaky_relu,
+            F.elu,
+            lambda t: t,  # identity
+        ]
+        self.__act = choice(act_fn)
 
         # noise params for SCM (epsilon)
 
@@ -109,13 +91,11 @@ class SCM(nn.Module):
             self.register_buffer(f"_noise_mean_{i}", th.zeros(hidden_sizes))
             self.register_buffer(
                 f"_noise_sigma_{i}",
-                tnlu((hidden_sizes,), 1e-4, 0.3, 1e-8),
+                tnlu((hidden_sizes,), 1e-4, 0.3, 1e-8).clamp_min(1e-8),
             )
 
         self.register_buffer("_cause_mean", th.zeros(hidden_sizes))
-        self.register_buffer(
-            "_cause_sigma", th.abs(th.randn(hidden_sizes)) + 1e-8
-        )
+        self.register_buffer("_cause_sigma", th.ones(hidden_sizes))
 
         self.apply(_init_scm)
 
@@ -126,13 +106,13 @@ class SCM(nn.Module):
         out = Normal(self._cause_mean, self._cause_sigma).sample(epsilon_size)
         outs = []
 
-        for i, (layer, act) in enumerate(zip(self.__mlp, self.__act)):
+        for i, layer in enumerate(self.__mlp):
             loc = self.get_buffer(f"_noise_mean_{i}")
             sig = self.get_buffer(f"_noise_sigma_{i}")
 
             dist = Normal(loc, sig)
 
-            out = act(layer(out) + dist.sample(epsilon_size))
+            out = self.__act(layer(out) + dist.sample(epsilon_size))
             outs.append(out)
 
         # stack layers output
