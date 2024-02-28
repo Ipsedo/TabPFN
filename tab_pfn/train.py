@@ -115,7 +115,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             grad_norm = tab_pfn.grad_norm()
 
             tqdm_bar.set_description(
-                f"loss = {loss_meter.loss():.4f}, "
+                f"loss = {loss.item():.4f}, "
+                f"loss_smoothed = {loss_meter.loss():.4f}, "
                 f"prec = {precision:.4f}, "
                 f"rec = {recall:.4f}, "
                 f"acc = {accuracy:.4f}, "
@@ -126,6 +127,7 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             mlflow.log_metrics(
                 {
                     "loss": loss.item(),
+                    "loss_smoothed": loss_meter.loss(),
                     "recall": recall,
                     "precision": precision,
                     "accuracy": accuracy,

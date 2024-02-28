@@ -4,7 +4,6 @@ from typing import Tuple
 
 import torch as th
 from torch.distributions import Normal
-from torch.nn import functional as F
 
 
 # truncated noise log uniform
@@ -47,22 +46,23 @@ def tnlu_float(
     return tnlu((1,), mu_min, mu_max, min_value).item()
 
 
-def normalize_pad_features(
+def repeat_features(x: th.Tensor, max_features: int) -> th.Tensor:
+    actual_size = x.size(1)
+
+    missing_features = max_features - actual_size
+    nb_repeat = missing_features // actual_size + 1
+    out = x.repeat(1, nb_repeat)
+    out = th.cat([out, x[:, : missing_features % actual_size]], dim=1)
+    return out
+
+
+def normalize_repeat_features(
     x_to_pad: th.Tensor, max_features: int
 ) -> th.Tensor:
     out_mean = x_to_pad.mean(dim=-2, keepdim=True)
     out_std = x_to_pad.std(dim=-2, keepdim=True) + 1e-8
 
     x_to_pad = (x_to_pad - out_mean) / out_std
-
-    actual_size = x_to_pad.size(1)
-    out = F.pad(
-        x_to_pad,
-        (0, max_features - actual_size),
-        mode="constant",
-        value=0,
-    )
-
-    out = out * max_features / actual_size
+    out = repeat_features(x_to_pad, max_features)
 
     return out
