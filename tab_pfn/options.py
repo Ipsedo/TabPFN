@@ -47,8 +47,6 @@ class TrainOptions(NamedTuple):
     data_ratios: Tuple[float, float]
     save_every: int
     metric_window_size: int
-    warmup_steps: int
-    min_lr: float
     output_folder: str
 
     def to_dict(self) -> Dict[str, Any]:
