@@ -125,12 +125,12 @@ class TabPFN(nn.Module):
         assert x_test.size(2) == self.__max_features
         assert x_test.size(0) == x_train.size(0)
 
-        all_data = th.cat([x_train, x_test], dim=1)
-        x_mean = all_data.mean(dim=1, keepdim=True)
-        x_std = all_data.std(dim=1, keepdim=True) + 1e-8
+        # all_data = th.cat([x_train, x_test], dim=1)
+        # x_mean = all_data.mean(dim=1, keepdim=True)
+        # x_std = all_data.std(dim=1, keepdim=True) + 1e-8
 
-        x_train = (x_train - x_mean) / x_std
-        x_test = (x_test - x_mean) / x_std
+        # x_train = (x_train - x_mean) / x_std
+        # x_test = (x_test - x_mean) / x_std
 
         train_enc = self.__data_lbl_enc(x_train, y_train)
         test_enc = self.__data_enc(x_test)

@@ -48,21 +48,20 @@ class SCM(nn.Module):
 
         # setup MLP
         n_layer: int = tnlu_int(1, 6, 2)
-        hidden_sizes: List[int] = [tnlu_int(5, 130, 4) for _ in range(n_layer)]
-        self.__max_hidden_size = max(hidden_sizes)
+        hidden_sizes: int = tnlu_int(5, 130, 4)
 
         self.__mlp = nn.ModuleList(
             nn.Linear(
-                hidden_sizes[i - 1] if i > 0 else hidden_sizes[0],
-                hidden_sizes[i],
+                hidden_sizes,
+                hidden_sizes,
                 bias=False,
             )
-            for i in range(len(hidden_sizes))
+            for _ in range(n_layer)
         )
 
         # create node indexes list
         node_list = th.tensor(
-            [[i, j] for i, h in enumerate(hidden_sizes) for j in range(h)]
+            [[i, j] for i in range(n_layer) for j in range(hidden_sizes)]
         )
         node_list = node_list[th.randperm(node_list.size(0))]
 
@@ -95,7 +94,9 @@ class SCM(nn.Module):
             )
 
         # activation functions
-        self.__act = nn.ModuleList(RandomActivation(h) for h in hidden_sizes)
+        self.__act = nn.ModuleList(
+            RandomActivation(hidden_sizes) for _ in range(n_layer)
+        )
 
         # noise params for SCM (epsilon)
 
@@ -104,15 +105,17 @@ class SCM(nn.Module):
         # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         # cov_mat = cov_mat @ cov_mat.t()
 
-        for i, h in enumerate(hidden_sizes):
-            self.register_buffer(f"_noise_mean_{i}", th.zeros(h))
+        for i in range(n_layer):
+            self.register_buffer(f"_noise_mean_{i}", th.zeros(hidden_sizes))
             self.register_buffer(
                 f"_noise_sigma_{i}",
-                tnlu((h,), 1e-4, 0.3, 1e-8),
+                tnlu((hidden_sizes,), 1e-4, 0.3, 1e-8),
             )
 
-        self.register_buffer("_cause_mean", th.zeros(hidden_sizes[0]))
-        self.register_buffer("_cause_sigma", th.ones(hidden_sizes[0]))
+        self.register_buffer("_cause_mean", th.zeros(hidden_sizes))
+        self.register_buffer(
+            "_cause_sigma", th.abs(th.randn(hidden_sizes)) + 1e-8
+        )
 
         self.apply(_init_scm)
 
@@ -130,7 +133,7 @@ class SCM(nn.Module):
             dist = Normal(loc, sig)
 
             out = act(layer(out) + dist.sample(epsilon_size))
-            outs.append(F.pad(out, (0, self.__max_hidden_size - out.size(1))))
+            outs.append(out)
 
         # stack layers output
         # (batch, layer, hidden_features)

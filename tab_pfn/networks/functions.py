@@ -50,13 +50,18 @@ def tnlu_float(
 def pad_features(x_to_pad: th.Tensor, max_features: int) -> th.Tensor:
     actual_size = x_to_pad.size(1)
 
-    return (
-        F.pad(
-            x_to_pad,
-            (0, max_features - actual_size),
-            mode="constant",
-            value=0,
-        )
-        * max_features
-        / actual_size
+    out_mean = x_to_pad.mean(dim=-2, keepdim=True)
+    out_std = x_to_pad.std(dim=-2, keepdim=True) + 1e-8
+
+    x_to_pad = (x_to_pad - out_mean) / out_std
+
+    out = F.pad(
+        x_to_pad,
+        (0, max_features - actual_size),
+        mode="constant",
+        value=0,
     )
+
+    out = out * max_features / actual_size
+
+    return out
