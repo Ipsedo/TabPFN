@@ -4,4 +4,4 @@ from .functions import normalize_pad_features
 from .pfn import PPD, TabPFN
 from .scm import SCM
 from .sklearn import SklearnClassifier
-from .warmup import get_cosine_schedule_with_warmup
+from .warmup import CosineScheduleWarmup
