@@ -75,7 +75,7 @@ class PPD(nn.Module):
             )
             - th.inf
         )
-        diag_indices = th.tensor(list(range(x_test.size(1))), device=device)
+        diag_indices = th.arange(x_test.size(1), device=device)
         tgt_mask[:, diag_indices, diag_indices] = th.zeros(
             x_test.size(1), device=device
         )
