@@ -57,7 +57,7 @@ class PPD(nn.Module):
     def forward(self, x_train: th.Tensor, x_test: th.Tensor) -> th.Tensor:
         device = "cuda" if next(self.parameters()).is_cuda else "cpu"
 
-        src_mask = th.ones(
+        src_mask = th.zeros(
             (
                 x_train.size(0) * self.__nheads,
                 x_train.size(1),
@@ -65,8 +65,18 @@ class PPD(nn.Module):
             ),
             device=device,
         )
-        tgt_mask = th.eye(x_test.size(1), device=device)[None].repeat(
-            x_test.size(0) * self.__nheads, 1, 1
+        tgt_mask = (
+            th.zeros(
+                x_test.size(0) * self.__nheads,
+                x_test.size(1),
+                x_test.size(1),
+                device=device,
+            )
+            - th.inf
+        )
+        diag_indices = th.tensor(list(range(x_test.size(1))), device=device)
+        tgt_mask[:, diag_indices, diag_indices] = th.zeros(
+            x_test.size(1), device=device
         )
 
         out_enc = self.__trf_enc(x_train, mask=src_mask)
