@@ -65,6 +65,7 @@ class PPD(nn.Module):
             ),
             device=device,
         )
+
         tgt_mask = (
             th.zeros(
                 x_test.size(0) * self.__nheads,
