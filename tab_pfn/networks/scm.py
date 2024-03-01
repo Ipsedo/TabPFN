@@ -12,7 +12,7 @@ from .functions import normalize_repeat_features, tnlu, tnlu_float, tnlu_int
 
 def _init_scm(module: nn.Module) -> None:
     if isinstance(module, nn.Linear):
-        nn.init.normal_(module.weight, std=tnlu_float(1e-2, 10, 0.0))
+        nn.init.normal_(module.weight, std=tnlu_float(1e-2, 10, 1e-8))
 
 
 class SCM(nn.Module):

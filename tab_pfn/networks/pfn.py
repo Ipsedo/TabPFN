@@ -93,8 +93,6 @@ class TabPFN(nn.Module):
         self,
         max_features: int,
         max_nb_class: int,
-        encoder_dim: int,
-        y_emb_dim: int,
         ppd_dim: int,
         ppd_hidden_dim: int,
         nheads: int,
@@ -107,14 +105,11 @@ class TabPFN(nn.Module):
         self.__data_lbl_enc = DataAndLabelEncoder(
             max_features,
             max_nb_class,
-            y_emb_dim,
-            encoder_dim,
             ppd_dim,
         )
 
         self.__data_enc = DataEncoder(
             max_features,
-            encoder_dim,
             ppd_dim,
         )
 

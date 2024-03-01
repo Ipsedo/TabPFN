@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import math
-from typing import Tuple
+from typing import Literal, Tuple
 
 import torch as th
 from torch.distributions import Normal
+from torch.nn import functional as F
 
 
 # truncated noise log uniform
@@ -12,16 +13,23 @@ def tnlu(
     mu_min: float,
     mu_max: float,
     min_value: float,
+    device: Literal["cpu", "cuda"] = "cpu",
 ) -> th.Tensor:
     log_min = math.log(mu_min)
     log_max = math.log(mu_max)
 
-    sigma = th.exp((log_max - log_min) * th.rand(sizes) + log_min)
-    mu = th.exp((log_max - log_min) * th.rand(sizes) + log_min)
+    sigma = th.exp(
+        (log_max - log_min) * th.rand(sizes, device=device) + log_min
+    )
+    mu = th.exp((log_max - log_min) * th.rand(sizes, device=device) + log_min)
 
     loi = Normal(mu, sigma)
     sample: th.Tensor = (
-        loi.icdf((th.rand(*sizes) - 1) * (1 - loi.cdf(th.tensor(0))) + 1)
+        loi.icdf(
+            (th.rand(*sizes, device=device) - 1)
+            * (1 - loi.cdf(th.tensor(0, device=device)))
+            + 1
+        )
         + min_value
     )
 
@@ -56,13 +64,14 @@ def repeat_features(x: th.Tensor, max_features: int) -> th.Tensor:
     return out
 
 
+def pad_features(x: th.Tensor, max_features: int) -> th.Tensor:
+    return F.pad(x, (0, min(max_features - x.size(1), 0)))
+
+
 def normalize_repeat_features(
     x_to_pad: th.Tensor, max_features: int
 ) -> th.Tensor:
-    out_mean = x_to_pad.mean(dim=-2, keepdim=True)
-    out_std = x_to_pad.std(dim=-2, keepdim=True) + 1e-8
-
-    x_to_pad = (x_to_pad - out_mean) / out_std
-    out = repeat_features(x_to_pad, max_features)
-
-    return out
+    x_to_pad = (x_to_pad - x_to_pad.mean(dim=-2, keepdim=True)) / (
+        x_to_pad.std(dim=-2, keepdim=True) + 1e-8
+    )
+    return repeat_features(x_to_pad, max_features)

@@ -36,8 +36,6 @@ def test_scm(
 @pytest.mark.parametrize("n_data", [2, 3])
 @pytest.mark.parametrize("x_dim", [64, 128])
 @pytest.mark.parametrize("nb_class", [3, 4])
-@pytest.mark.parametrize("y_emb_dim", [64, 128])
-@pytest.mark.parametrize("hidden_dim", [64, 128])
 @pytest.mark.parametrize("output_dim", [64, 128])
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_data_encoder(
@@ -45,17 +43,13 @@ def test_data_encoder(
     n_data: int,
     x_dim: int,
     nb_class: int,
-    y_emb_dim: int,
-    hidden_dim: int,
     output_dim: int,
     device: str,
 ) -> None:
-    data_lbl_enc = DataAndLabelEncoder(
-        x_dim, nb_class, y_emb_dim, hidden_dim, output_dim
-    )
+    data_lbl_enc = DataAndLabelEncoder(x_dim, nb_class, output_dim)
     data_lbl_enc.to(device)
 
-    date_enc = DataEncoder(x_dim, hidden_dim, output_dim)
+    date_enc = DataEncoder(x_dim, output_dim)
     date_enc.to(device)
 
     x = th.randn(batch_size, n_data, x_dim, device=device)
@@ -124,8 +118,6 @@ def test_tab_pfn(
     nb_class: int,
     device: str,
 ) -> None:
-    encoder_dim = 2
-    y_emb_dim = 2
     model_dim = 2
     hidden_dim = 2
     nheads = 1
@@ -134,8 +126,6 @@ def test_tab_pfn(
     tab_pfn = TabPFN(
         max_features,
         nb_class,
-        encoder_dim,
-        y_emb_dim,
         model_dim,
         hidden_dim,
         nheads,
