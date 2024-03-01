@@ -55,7 +55,7 @@ def test_data_encoder(
     x = th.randn(batch_size, n_data, x_dim, device=device)
     y = th.randint(0, nb_class, (batch_size, n_data), device=device)
 
-    o = data_lbl_enc(x, y)
+    o = data_lbl_enc((x, y))
 
     assert len(o.size()) == 3
     assert o.size(0) == batch_size
@@ -90,13 +90,13 @@ def test_ppd(
     nb_class: int,
     device: str,
 ) -> None:
-    pfn = PPD(model_dim, hidden_dim, nheads, num_layers, nb_class)
-    pfn.to(device)
+    ppd = PPD(model_dim, hidden_dim, nheads, num_layers, nb_class)
+    ppd.to(device)
 
     x_train = th.randn(batch_size, nb_train, model_dim, device=device)
     x_test = th.randn(batch_size, nb_test, model_dim, device=device)
 
-    out = pfn(x_train, x_test)
+    out = ppd(x_train, x_test)
 
     assert len(out.size()) == 3
     assert out.size(0) == batch_size

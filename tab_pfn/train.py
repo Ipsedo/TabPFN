@@ -6,6 +6,7 @@ from random import uniform
 
 import mlflow
 import torch as th
+from torch.cuda.amp import GradScaler
 from torch.nn import functional as F
 from tqdm import tqdm
 
@@ -49,6 +50,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
             tab_pfn.parameters(), lr=train_options.learning_rate
         )
 
+        grad_scaler = GradScaler()
+
         mlflow.log_params(
             {
                 "model_options": model_options.to_dict(),
@@ -91,14 +94,16 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
                 y[:, train_nb:],
             )
 
-            out = tab_pfn(x_train, y_train, x_test)
-            loss = F.cross_entropy(
-                out.permute(0, 2, 1), y_test, reduction="mean"
-            )
+            with th.autocast(device_type=str(device), dtype=th.float16):
+                out = tab_pfn(x_train, y_train, x_test)
+                loss = F.cross_entropy(
+                    out.permute(0, 2, 1), y_test, reduction="mean"
+                )
 
             optim.zero_grad(set_to_none=True)
-            loss.backward()
-            optim.step()
+            grad_scaler.scale(loss).backward()
+            grad_scaler.step(optim)
+            grad_scaler.update()
 
             loss_meter.add(loss.item())
 

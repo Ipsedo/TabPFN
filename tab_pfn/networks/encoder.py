@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from typing import Tuple
 
 import torch as th
 from torch import nn
@@ -36,7 +37,9 @@ class DataAndLabelEncoder(nn.Module):
         self.__y_emb = nn.Embedding(nb_class_max, output_dim)
         self.__encoder = DataEncoder(x_max_dim, output_dim)
 
-    def forward(self, x: th.Tensor, y: th.Tensor) -> th.Tensor:
+    def forward(self, x_y: Tuple[th.Tensor, th.Tensor]) -> th.Tensor:
+        x, y = x_y
+
         y_emb = self.__y_emb(y)
         out: th.Tensor = self.__encoder(x) + y_emb
 
