@@ -28,7 +28,7 @@ def tnlu(
     sample: th.Tensor = (
         loi.icdf(
             (th.rand(1, device=device) - 1)
-            * (1 - loi.cdf(th.tensor(0, device=device)))
+            * (1 - loi.cdf(th.zeros(1, device=device)))
             + 1
         )
         + min_value
