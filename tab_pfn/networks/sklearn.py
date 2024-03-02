@@ -8,7 +8,7 @@ import torch as th
 from pandas.api.types import is_numeric_dtype
 from sklearn.base import BaseEstimator, ClassifierMixin
 
-from .functions import normalize_repeat_features
+from .functions import normalize_pad_features
 from .pfn import TabPFN
 
 T = TypeVar("T", pd.DataFrame, np.ndarray, th.Tensor)
@@ -130,7 +130,7 @@ class _SklearnTabPFN(SklearnClassifier):
         else:
             raise TypeError(f"Unrecognized input type {type(x)}")
 
-        return normalize_repeat_features(out, self.__model.nb_features).to(
+        return normalize_pad_features(out, self.__model.nb_features).to(
             th.float
         )
 

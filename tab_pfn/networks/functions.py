@@ -65,13 +65,17 @@ def repeat_features(x: th.Tensor, max_features: int) -> th.Tensor:
 
 
 def pad_features(x: th.Tensor, max_features: int) -> th.Tensor:
-    return F.pad(x, (0, min(max_features - x.size(1), 0)))
+    return (
+        F.pad(x, (0, max(max_features - x.size(1), 0)))
+        * max_features
+        / x.size(1)
+    )
 
 
-def normalize_repeat_features(
+def normalize_pad_features(
     x_to_pad: th.Tensor, max_features: int
 ) -> th.Tensor:
     x_to_pad = (x_to_pad - x_to_pad.mean(dim=-2, keepdim=True)) / (
         x_to_pad.std(dim=-2, keepdim=True) + 1e-8
     )
-    return repeat_features(x_to_pad, max_features)
+    return pad_features(x_to_pad, max_features)

@@ -7,7 +7,7 @@ from torch import nn
 from torch.distributions import Beta, Normal
 from torch.nn import functional as F
 
-from .functions import normalize_repeat_features, tnlu, tnlu_float, tnlu_int
+from .functions import normalize_pad_features, tnlu, tnlu_float, tnlu_int
 
 
 def _init_scm(module: nn.Module) -> None:
@@ -24,9 +24,13 @@ class SCM(nn.Module):
     ) -> None:
         super().__init__()
 
+        # draw features number
+        self.__wanted_n_features = n_features
+        self.__n_features = int(uniform(2, self.__wanted_n_features))
+
         # setup MLP
         n_layer: int = tnlu_int(1, 6, 2)
-        hidden_sizes: int = tnlu_int(5, 130, 4)
+        hidden_sizes: int = tnlu_int(5, 130, self.__n_features)
 
         self.__mlp = nn.ModuleList(
             nn.Linear(
@@ -42,12 +46,6 @@ class SCM(nn.Module):
             [[i, j] for i in range(n_layer) for j in range(hidden_sizes)]
         )
         node_list = node_list[th.randperm(node_list.size(0))]
-
-        # adapt features number
-        self.__wanted_n_features = n_features
-        self.__n_features = min(
-            int(uniform(2, self.__wanted_n_features)), node_list.size(0) - 1
-        )
 
         # Z : used for features and label
         self.__zx_nodes_idx = node_list[: self.__n_features].split(1, dim=1)
@@ -135,7 +133,7 @@ class SCM(nn.Module):
         )
 
     def __pad_shuffle_features(self, x_to_pad: th.Tensor) -> th.Tensor:
-        return normalize_repeat_features(x_to_pad, self.__wanted_n_features)[
+        return normalize_pad_features(x_to_pad, self.__wanted_n_features)[
             :, self.__zx_rand_perm
         ]
 
