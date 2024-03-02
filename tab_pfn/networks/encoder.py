@@ -12,11 +12,6 @@ def _init_encoder(module: nn.Module) -> None:
         if module.bias is not None:
             nn.init.normal_(module.bias)
 
-    elif isinstance(module, nn.LayerNorm):
-        if module.elementwise_affine:
-            nn.init.constant_(module.weight, 1.0)
-            nn.init.constant_(module.bias, 0.0)
-
 
 class DataEncoder(nn.Linear):
     def __init__(self, x_max_dim: int, output_dim: int) -> None:
@@ -39,8 +34,5 @@ class DataAndLabelEncoder(nn.Module):
 
     def forward(self, x_y: Tuple[th.Tensor, th.Tensor]) -> th.Tensor:
         x, y = x_y
-
-        y_emb = self.__y_emb(y)
-        out: th.Tensor = self.__encoder(x) + y_emb
-
+        out: th.Tensor = self.__encoder(x) + self.__y_emb(y)
         return out

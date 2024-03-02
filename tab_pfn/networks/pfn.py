@@ -54,17 +54,21 @@ class PPD(nn.Module):
 
         self.__to_class = nn.Linear(model_dim, nb_class)
 
-    def forward(self, x_train: th.Tensor, x_test: th.Tensor) -> th.Tensor:
-        device = "cuda" if next(self.parameters()).is_cuda else "cpu"
+    def __get_device(self) -> str:
+        return "cuda" if next(self.parameters()).is_cuda else "cpu"
 
-        src_mask = th.zeros(
+    def __get_src_mask(self, x_train: th.Tensor) -> th.Tensor:
+        return th.zeros(
             (
                 x_train.size(0) * self.__nheads,
                 x_train.size(1),
                 x_train.size(1),
             ),
-            device=device,
+            device=self.__get_device(),
         )
+
+    def __get_tgt_mask(self, x_test: th.Tensor) -> th.Tensor:
+        device = self.__get_device()
 
         tgt_mask = (
             th.zeros(
@@ -75,13 +79,19 @@ class PPD(nn.Module):
             )
             - th.inf
         )
+
         diag_indices = th.arange(x_test.size(1), device=device)
         tgt_mask[:, diag_indices, diag_indices] = th.zeros(
             x_test.size(1), device=device
         )
 
-        out_enc = self.__trf_enc(x_train, mask=src_mask)
-        out_dec = self.__trf_dec(x_test, out_enc, tgt_mask=tgt_mask)
+        return tgt_mask
+
+    def forward(self, x_train: th.Tensor, x_test: th.Tensor) -> th.Tensor:
+        out_enc = self.__trf_enc(x_train, mask=self.__get_src_mask(x_train))
+        out_dec = self.__trf_dec(
+            x_test, out_enc, tgt_mask=self.__get_tgt_mask(x_test)
+        )
 
         out: th.Tensor = self.__to_class(out_dec)
 

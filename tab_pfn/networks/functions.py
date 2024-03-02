@@ -60,9 +60,10 @@ def repeat_features(x: th.Tensor, max_features: int) -> th.Tensor:
 
     missing_features = max_features - actual_size
     nb_repeat = missing_features // actual_size + 1
-    out = x.repeat(1, nb_repeat)
-    out = th.cat([out, x[:, : missing_features % actual_size]], dim=1)
-    return out
+
+    return th.cat(
+        [x.repeat(1, nb_repeat), x[:, : missing_features % actual_size]], dim=1
+    )
 
 
 def pad_features(x: th.Tensor, max_features: int) -> th.Tensor:
@@ -73,10 +74,15 @@ def pad_features(x: th.Tensor, max_features: int) -> th.Tensor:
     )
 
 
-def normalize_pad_features(
-    x_to_pad: th.Tensor, max_features: int
-) -> th.Tensor:
-    x_to_pad = (x_to_pad - x_to_pad.mean(dim=-2, keepdim=True)) / (
-        x_to_pad.std(dim=-2, keepdim=True) + 1e-8
+def normalize_features(x: th.Tensor) -> th.Tensor:
+    return (x - x.mean(dim=-2, keepdim=True)) / (
+        x.std(dim=-2, keepdim=True) + 1e-8
     )
-    return pad_features(x_to_pad, max_features)
+
+
+def normalize_pad_features(x: th.Tensor, max_features: int) -> th.Tensor:
+    return pad_features(normalize_features(x), max_features)
+
+
+def normalize_repeat_features(x: th.Tensor, max_features: int) -> th.Tensor:
+    return repeat_features(normalize_features(x), max_features)
