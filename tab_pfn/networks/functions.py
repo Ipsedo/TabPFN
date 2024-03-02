@@ -24,9 +24,10 @@ def tnlu(
     mu = th.exp((log_max - log_min) * th.rand(sizes, device=device) + log_min)
 
     loi = Normal(mu, sigma)
+
     sample: th.Tensor = (
         loi.icdf(
-            (th.rand(*sizes, device=device) - 1)
+            (th.rand(1, device=device) - 1)
             * (1 - loi.cdf(th.tensor(0, device=device)))
             + 1
         )

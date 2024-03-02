@@ -30,7 +30,10 @@ class SCM(nn.Module):
 
         # setup MLP
         n_layer: int = tnlu_int(1, 6, 2)
-        hidden_sizes: int = tnlu_int(5, 130, self.__n_features)
+        # + 1 for class node
+        hidden_sizes: int = max(
+            tnlu_int(5, 130, 2), self.__n_features // n_layer + 1
+        )
 
         self.__mlp = nn.ModuleList(
             nn.Linear(
