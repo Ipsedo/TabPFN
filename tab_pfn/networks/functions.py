@@ -56,21 +56,22 @@ def tnlu_float(
 
 
 def repeat_features(x: th.Tensor, max_features: int) -> th.Tensor:
-    actual_size = x.size(1)
+    actual_size = x.size(-1)
 
     missing_features = max_features - actual_size
     nb_repeat = missing_features // actual_size + 1
 
-    return th.cat(
-        [x.repeat(1, nb_repeat), x[:, : missing_features % actual_size]], dim=1
-    )
+    x_slice = [slice(0, s) for s in x.size()]
+    x_slice[-1] = slice(0, missing_features % actual_size)
+
+    return th.cat([x.repeat_interleave(nb_repeat, dim=-1), x[x_slice]], dim=-1)
 
 
 def pad_features(x: th.Tensor, max_features: int) -> th.Tensor:
     return (
-        F.pad(x, (0, max(max_features - x.size(1), 0)))
+        F.pad(x, (0, max(max_features - x.size(-1), 0)))
         * max_features
-        / x.size(1)
+        / x.size(-1)
     )
 
 

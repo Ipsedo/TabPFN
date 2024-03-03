@@ -7,7 +7,7 @@ from torch import nn
 from torch.distributions import Beta, Normal
 from torch.nn import functional as F
 
-from .functions import normalize_pad_features, tnlu, tnlu_float, tnlu_int
+from .functions import normalize_repeat_features, tnlu, tnlu_float, tnlu_int
 
 
 def _init_scm(module: nn.Module) -> None:
@@ -136,7 +136,7 @@ class SCM(nn.Module):
         )
 
     def __pad_shuffle_features(self, x_to_pad: th.Tensor) -> th.Tensor:
-        return normalize_pad_features(x_to_pad, self.__wanted_n_features)[
+        return normalize_repeat_features(x_to_pad, self.__wanted_n_features)[
             :, self.__zx_rand_perm
         ]
 
