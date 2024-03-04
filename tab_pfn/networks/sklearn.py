@@ -111,9 +111,10 @@ class _SklearnTabPFN(SklearnClassifier):
         if isinstance(x_test, pd.DataFrame):
             array = out.cpu().numpy()
             if len(out.size()) > 1:
-                return pd.DataFrame(
+                df = pd.DataFrame(
                     array, columns=list(self.__class_to_idx.keys())
                 )
+                return df[sorted(df.columns)]
             idx_to_class = {idx: c for c, idx in self.__class_to_idx.items()}
             pred_class = [idx_to_class[c] for c in array]
             return pd.DataFrame(pred_class, columns=["prediction"])
@@ -130,8 +131,8 @@ class _SklearnTabPFN(SklearnClassifier):
         else:
             raise TypeError(f"Unrecognized input type {type(x)}")
 
-        return normalize_repeat_features(out, self.__model.nb_features).to(
-            th.float
+        return normalize_repeat_features(
+            out.to(th.float), self.__model.nb_features
         )
 
     def __convert_y_to_tensor(self, y: T) -> th.Tensor:
