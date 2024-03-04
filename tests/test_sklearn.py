@@ -19,7 +19,7 @@ def test_torch(
     n_classes: int,
     device: str,
 ) -> None:
-    tab_pfn = TabPFN(10, 10, 4, 2, 4, 4, 1, 1)
+    tab_pfn = TabPFN(10, 10, 4, 4, 1, 1)
     tab_pfn.to(th.device(device))
 
     tab_pfn_clf = SklearnClassifier.from_torch(tab_pfn)
@@ -57,7 +57,7 @@ def test_numpy(
     n_classes: int,
     device: str,
 ) -> None:
-    tab_pfn = TabPFN(10, 10, 2, 4, 4, 4, 1, 1)
+    tab_pfn = TabPFN(10, 10, 4, 4, 1, 1)
     tab_pfn.to(th.device(device))
 
     tab_pfn_clf = SklearnClassifier.from_torch(tab_pfn)
@@ -95,7 +95,7 @@ def test_pandas(
     n_classes: int,
     device: str,
 ) -> None:
-    tab_pfn = TabPFN(10, 10, 2, 4, 4, 4, 1, 1)
+    tab_pfn = TabPFN(10, 10, 4, 4, 1, 1)
     tab_pfn.to(th.device(device))
 
     tab_pfn_clf = SklearnClassifier.from_torch(tab_pfn)

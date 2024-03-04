@@ -7,34 +7,12 @@ from torch import nn
 from torch.distributions import Beta, Normal
 from torch.nn import functional as F
 
-from .functions import pad_features, tnlu, tnlu_float, tnlu_int
+from .functions import normalize_repeat_features, tnlu, tnlu_float, tnlu_int
 
 
 def _init_scm(module: nn.Module) -> None:
     if isinstance(module, nn.Linear):
-        nn.init.normal_(module.weight, std=tnlu_float(1e-2, 10, 0.0))
-
-
-class RandomActivation(nn.Module):
-    def __init__(self, size: int) -> None:
-        super().__init__()
-
-        act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
-            F.relu,
-            F.tanh,
-            F.leaky_relu,
-            F.elu,
-            lambda t: t,  # identity
-        ]
-
-        self.__act: List[Callable[[th.Tensor], th.Tensor]] = [
-            choice(act_fn) for _ in range(size)
-        ]
-
-    def forward(self, x: th.Tensor) -> th.Tensor:
-        return th.stack(
-            [act(d) for d, act in zip(x.unbind(dim=1), self.__act)], dim=1
-        )
+        nn.init.normal_(module.weight, std=tnlu_float(1e-2, 10, 1e-8))
 
 
 class SCM(nn.Module):
@@ -46,31 +24,31 @@ class SCM(nn.Module):
     ) -> None:
         super().__init__()
 
+        # draw features number
+        self.__wanted_n_features = n_features
+        self.__n_features = int(uniform(2, self.__wanted_n_features))
+
         # setup MLP
         n_layer: int = tnlu_int(1, 6, 2)
-        hidden_sizes: List[int] = [tnlu_int(5, 130, 4) for _ in range(n_layer)]
-        self.__max_hidden_size = max(hidden_sizes)
+        # + 1 for class node
+        hidden_sizes: int = max(
+            tnlu_int(5, 130, 2), self.__n_features // n_layer + 1
+        )
 
         self.__mlp = nn.ModuleList(
             nn.Linear(
-                hidden_sizes[i - 1] if i > 0 else hidden_sizes[0],
-                hidden_sizes[i],
+                hidden_sizes,
+                hidden_sizes,
                 bias=False,
             )
-            for i in range(len(hidden_sizes))
+            for _ in range(n_layer)
         )
 
         # create node indexes list
         node_list = th.tensor(
-            [[i, j] for i, h in enumerate(hidden_sizes) for j in range(h)]
+            [[i, j] for i in range(n_layer) for j in range(hidden_sizes)]
         )
         node_list = node_list[th.randperm(node_list.size(0))]
-
-        # adapt features number
-        self.__wanted_n_features = n_features
-        self.__n_features = min(
-            int(uniform(2, self.__wanted_n_features)), node_list.size(0) - 1
-        )
 
         # Z : used for features and label
         self.__zx_nodes_idx = node_list[: self.__n_features].split(1, dim=1)
@@ -95,7 +73,13 @@ class SCM(nn.Module):
             )
 
         # activation functions
-        self.__act = nn.ModuleList(RandomActivation(h) for h in hidden_sizes)
+        act_fn: List[Callable[[th.Tensor], th.Tensor]] = [
+            F.tanh,
+            F.leaky_relu,
+            F.elu,
+            lambda t: t,  # identity
+        ]
+        self.__act = choice(act_fn)
 
         # noise params for SCM (epsilon)
 
@@ -104,15 +88,15 @@ class SCM(nn.Module):
         # cov_mat = cov_mat + hidden_size * th.eye(hidden_size)
         # cov_mat = cov_mat @ cov_mat.t()
 
-        for i, h in enumerate(hidden_sizes):
-            self.register_buffer(f"_noise_mean_{i}", th.zeros(h))
+        for i in range(n_layer):
+            self.register_buffer(f"_noise_mean_{i}", th.zeros(hidden_sizes))
             self.register_buffer(
                 f"_noise_sigma_{i}",
-                tnlu((h,), 1e-4, 0.3, 1e-8),
+                tnlu((hidden_sizes,), 1e-4, 0.3, 1e-8).clamp_min(1e-8),
             )
 
-        self.register_buffer("_cause_mean", th.zeros(hidden_sizes[0]))
-        self.register_buffer("_cause_sigma", th.ones(hidden_sizes[0]))
+        self.register_buffer("_cause_mean", th.zeros(hidden_sizes))
+        self.register_buffer("_cause_sigma", th.ones(hidden_sizes))
 
         self.apply(_init_scm)
 
@@ -123,14 +107,14 @@ class SCM(nn.Module):
         out = Normal(self._cause_mean, self._cause_sigma).sample(epsilon_size)
         outs = []
 
-        for i, (layer, act) in enumerate(zip(self.__mlp, self.__act)):
+        for i, layer in enumerate(self.__mlp):
             loc = self.get_buffer(f"_noise_mean_{i}")
             sig = self.get_buffer(f"_noise_sigma_{i}")
 
             dist = Normal(loc, sig)
 
-            out = act(layer(out) + dist.sample(epsilon_size))
-            outs.append(F.pad(out, (0, self.__max_hidden_size - out.size(1))))
+            out = self.__act(layer(out) + dist.sample(epsilon_size))
+            outs.append(out)
 
         # stack layers output
         # (batch, layer, hidden_features)
@@ -152,7 +136,7 @@ class SCM(nn.Module):
         )
 
     def __pad_shuffle_features(self, x_to_pad: th.Tensor) -> th.Tensor:
-        return pad_features(x_to_pad, self.__wanted_n_features)[
+        return normalize_repeat_features(x_to_pad, self.__wanted_n_features)[
             :, self.__zx_rand_perm
         ]
 

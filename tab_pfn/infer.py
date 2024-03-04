@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from .data import CsvDataset
 from .metrics import AccuracyMeter, ConfusionMeter
-from .networks import pad_features
+from .networks import normalize_repeat_features
 from .options import InferOptions, ModelOptions
 
 
@@ -43,7 +43,7 @@ def infer(model_options: ModelOptions, infer_options: InferOptions) -> None:
 
     x_tmp, y_tmp = zip(*[train_dataset[i] for i in range(len(train_dataset))])
 
-    x_train = pad_features(
+    x_train = normalize_repeat_features(
         th.stack(x_tmp, dim=0).to(device), model_options.max_features
     )[None, :, features_randperm]
     y_train = th.stack(y_tmp, dim=0).to(device)[None]
@@ -55,9 +55,9 @@ def infer(model_options: ModelOptions, infer_options: InferOptions) -> None:
 
     for x, y in tqdm(data_loader):
 
-        x = pad_features(x.to(device), model_options.max_features)[
-            None, :, features_randperm
-        ]
+        x = normalize_repeat_features(
+            x.to(device), model_options.max_features
+        )[None, :, features_randperm]
         y = y.to(device)
 
         with th.no_grad():
