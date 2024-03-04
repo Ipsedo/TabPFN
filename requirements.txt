@@ -5,6 +5,7 @@ mlflow
 pandas
 openml
 scikit-learn
+jupyter
 
 pre-commit
 mypy
