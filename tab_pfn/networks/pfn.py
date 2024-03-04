@@ -54,23 +54,44 @@ class PPD(nn.Module):
 
         self.__to_class = nn.Linear(model_dim, nb_class)
 
-    def forward(self, x_train: th.Tensor, x_test: th.Tensor) -> th.Tensor:
-        device = "cuda" if next(self.parameters()).is_cuda else "cpu"
+    def __get_device(self) -> str:
+        return "cuda" if next(self.parameters()).is_cuda else "cpu"
 
-        src_mask = th.ones(
+    def __get_src_mask(self, x_train: th.Tensor) -> th.Tensor:
+        return th.zeros(
             (
                 x_train.size(0) * self.__nheads,
                 x_train.size(1),
                 x_train.size(1),
             ),
-            device=device,
-        )
-        tgt_mask = th.eye(x_test.size(1), device=device)[None].repeat(
-            x_test.size(0) * self.__nheads, 1, 1
+            device=self.__get_device(),
         )
 
-        out_enc = self.__trf_enc(x_train, mask=src_mask)
-        out_dec = self.__trf_dec(x_test, out_enc, tgt_mask=tgt_mask)
+    def __get_tgt_mask(self, x_test: th.Tensor) -> th.Tensor:
+        device = self.__get_device()
+
+        tgt_mask = (
+            th.zeros(
+                x_test.size(0) * self.__nheads,
+                x_test.size(1),
+                x_test.size(1),
+                device=device,
+            )
+            - th.inf
+        )
+
+        diag_indices = th.arange(x_test.size(1), device=device)
+        tgt_mask[:, diag_indices, diag_indices] = th.zeros(
+            x_test.size(1), device=device
+        )
+
+        return tgt_mask
+
+    def forward(self, x_train: th.Tensor, x_test: th.Tensor) -> th.Tensor:
+        out_enc = self.__trf_enc(x_train, mask=self.__get_src_mask(x_train))
+        out_dec = self.__trf_dec(
+            x_test, out_enc, tgt_mask=self.__get_tgt_mask(x_test)
+        )
 
         out: th.Tensor = self.__to_class(out_dec)
 
@@ -82,8 +103,6 @@ class TabPFN(nn.Module):
         self,
         max_features: int,
         max_nb_class: int,
-        encoder_dim: int,
-        y_emb_dim: int,
         ppd_dim: int,
         ppd_hidden_dim: int,
         nheads: int,
@@ -93,18 +112,23 @@ class TabPFN(nn.Module):
 
         self.__max_features = max_features
 
-        self.__data_lbl_enc = DataAndLabelEncoder(
-            max_features,
-            max_nb_class,
-            y_emb_dim,
-            encoder_dim,
-            ppd_dim,
+        self.__data_lbl_enc = nn.Sequential(
+            DataAndLabelEncoder(
+                max_features,
+                max_nb_class,
+                ppd_dim,
+            ),
+            nn.Mish(),
+            nn.LayerNorm(ppd_dim),
         )
 
-        self.__data_enc = DataEncoder(
-            max_features,
-            encoder_dim,
-            ppd_dim,
+        self.__data_enc = nn.Sequential(
+            DataEncoder(
+                max_features,
+                ppd_dim,
+            ),
+            nn.Mish(),
+            nn.LayerNorm(ppd_dim),
         )
 
         self.__trf = PPD(
@@ -125,14 +149,7 @@ class TabPFN(nn.Module):
         assert x_test.size(2) == self.__max_features
         assert x_test.size(0) == x_train.size(0)
 
-        # all_data = th.cat([x_train, x_test], dim=1)
-        # x_mean = all_data.mean(dim=1, keepdim=True)
-        # x_std = all_data.std(dim=1, keepdim=True) + 1e-8
-
-        # x_train = (x_train - x_mean) / x_std
-        # x_test = (x_test - x_mean) / x_std
-
-        train_enc = self.__data_lbl_enc(x_train, y_train)
+        train_enc = self.__data_lbl_enc((x_train, y_train))
         test_enc = self.__data_enc(x_test)
 
         out: th.Tensor = self.__trf(train_enc, test_enc)

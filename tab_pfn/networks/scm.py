@@ -12,7 +12,7 @@ from .functions import normalize_repeat_features, tnlu, tnlu_float, tnlu_int
 
 def _init_scm(module: nn.Module) -> None:
     if isinstance(module, nn.Linear):
-        nn.init.normal_(module.weight, std=tnlu_float(1e-2, 10, 0.0))
+        nn.init.normal_(module.weight, std=tnlu_float(1e-2, 10, 1e-8))
 
 
 class SCM(nn.Module):
@@ -24,9 +24,16 @@ class SCM(nn.Module):
     ) -> None:
         super().__init__()
 
+        # draw features number
+        self.__wanted_n_features = n_features
+        self.__n_features = int(uniform(2, self.__wanted_n_features))
+
         # setup MLP
         n_layer: int = tnlu_int(1, 6, 2)
-        hidden_sizes: int = tnlu_int(5, 130, 4)
+        # + 1 for class node
+        hidden_sizes: int = max(
+            tnlu_int(5, 130, 2), self.__n_features // n_layer + 1
+        )
 
         self.__mlp = nn.ModuleList(
             nn.Linear(
@@ -42,12 +49,6 @@ class SCM(nn.Module):
             [[i, j] for i in range(n_layer) for j in range(hidden_sizes)]
         )
         node_list = node_list[th.randperm(node_list.size(0))]
-
-        # adapt features number
-        self.__wanted_n_features = n_features
-        self.__n_features = min(
-            int(uniform(2, self.__wanted_n_features)), node_list.size(0) - 1
-        )
 
         # Z : used for features and label
         self.__zx_nodes_idx = node_list[: self.__n_features].split(1, dim=1)
