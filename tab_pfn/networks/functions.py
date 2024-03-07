@@ -26,10 +26,13 @@ def tnlu(
     loi = Normal(mu, sigma)
 
     sample: th.Tensor = (
-        loi.icdf(
-            (th.rand(1, device=device) - 1)
-            * (1 - loi.cdf(th.zeros(1, device=device)))
-            + 1
+        th.clamp_min(
+            loi.icdf(
+                (th.rand(sizes, device=device) - 1)
+                * (1 - loi.cdf(th.zeros(1, device=device)))
+                + 1
+            ),
+            0,
         )
         + min_value
     )

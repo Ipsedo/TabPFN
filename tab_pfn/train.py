@@ -51,8 +51,8 @@ def train(model_options: ModelOptions, train_options: TrainOptions) -> None:
 
         mlflow.log_params(
             {
-                "model_options": model_options.to_dict(),
-                "train_options": train_options.to_dict(),
+                **model_options.to_dict(),
+                **train_options.to_dict(),
             }
         )
 
