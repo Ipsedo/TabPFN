@@ -3,8 +3,37 @@ import math
 from typing import Literal, Tuple
 
 import torch as th
-from torch.distributions import Normal
 from torch.nn import functional as F
+
+# def phi(z: th.Tensor) -> th.Tensor:
+#     return th.exp(-0.5 * th.pow(z, 2.0)) / math.sqrt(2.0 * th.pi)
+
+
+def theta(x: th.Tensor) -> th.Tensor:
+    return 0.5 * (1.0 + th.erf(x / math.sqrt(2.0)))
+
+
+def theta_inv(theta_value: th.Tensor) -> th.Tensor:
+    return math.sqrt(2.0) * th.erfinv(2.0 * theta_value - 1.0)
+
+
+def truncated_normal_sample(
+    mu: th.Tensor, sigma: th.Tensor, min_value: float, max_value: float
+) -> th.Tensor:
+    alpha = (min_value - mu) / sigma
+    beta = (max_value - mu) / sigma
+
+    # clamp due to numerical imprecision
+    return th.clamp(
+        theta_inv(
+            theta(alpha)
+            + th.rand_like(mu, device=mu.device) * (theta(beta) - theta(alpha))
+        )
+        * sigma
+        + mu,
+        min_value,
+        max_value,
+    )
 
 
 # truncated noise log uniform
@@ -23,18 +52,7 @@ def tnlu(
     )
     mu = th.exp((log_max - log_min) * th.rand(sizes, device=device) + log_min)
 
-    loi = Normal(mu, sigma)
-
-    sample: th.Tensor = (
-        loi.icdf(
-            (th.rand(1, device=device) - 1)
-            * (1 - loi.cdf(th.zeros(1, device=device)))
-            + 1
-        )
-        + min_value
-    )
-
-    return sample
+    return truncated_normal_sample(mu, sigma, 0.0, th.inf) + min_value
 
 
 def tnlu_int(
